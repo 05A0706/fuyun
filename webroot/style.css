@@ -1,0 +1,135 @@
+/* fuyun WebUI - 暗色主题 */
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --border: #2a2f3d;
+  --text: #e6e8ee;
+  --dim: #8b93a7;
+  --accent: #4f8cff;
+  --green: #35c46a;
+  --red: #ff5c5c;
+  --orange: #ffb347;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  padding-bottom: 40px;
+}
+header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #1c2a4a, #1a1d27);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+header h1 { font-size: 20px; }
+header .sub { color: var(--dim); font-size: 12px; flex: 1; }
+main { max-width: 720px; margin: 16px auto; padding: 0 14px; display: flex; flex-direction: column; gap: 14px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.card h2 { font-size: 14px; color: var(--accent); margin-bottom: 12px; letter-spacing: 1px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat label { display: block; color: var(--dim); font-size: 11px; margin-bottom: 4px; }
+.stat span { font-size: 15px; font-weight: 600; }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px !important; word-break: break-all; }
+.small { font-size: 12px !important; font-weight: 400 !important; }
+.badge {
+  padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.badge.ok { background: rgba(53,196,106,.15); color: var(--green); }
+.badge.bad { background: rgba(255,92,92,.15); color: var(--red); }
+.badge.na { background: rgba(139,147,167,.15); color: var(--dim); }
+.modebtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.mode {
+  flex: 1; min-width: 70px; padding: 10px 0;
+  background: #232838; color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 14px; cursor: pointer;
+}
+.mode.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.hint { color: var(--dim); font-size: 11px; margin-top: 8px; }
+.form { display: flex; flex-direction: column; gap: 10px; }
+.form.inline { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row label { width: 130px; color: var(--dim); font-size: 12px; flex-shrink: 0; }
+.row input, .row select, .form.inline input, .form.inline select {
+  flex: 1; min-width: 120px;
+  background: #14161f; color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; font-size: 13px;
+}
+.row .hint { margin: 0; }
+.btn {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer;
+}
+.btn.small { padding: 6px 12px; font-size: 12px; }
+.btn.warn { background: var(--orange); color: #222; }
+.btn:hover { filter: brightness(1.15); }
+.list { list-style: none; margin-top: 10px; }
+.list li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.list li:last-child { border-bottom: none; }
+.list .pkg { font-family: ui-monospace, Consolas, monospace; }
+.list .mode-tag {
+  background: rgba(79,140,255,.15); color: var(--accent);
+  padding: 1px 8px; border-radius: 10px; font-size: 11px; margin-right: 8px;
+}
+.list .del {
+  background: none; border: none; color: var(--red);
+  font-size: 15px; cursor: pointer; padding: 2px 6px;
+}
+details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  background: #14161f;
+}
+summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  user-select: none;
+}
+.editor {
+  width: 100%;
+  min-height: 100px;
+  margin-top: 10px;
+  background: #10121a;
+  color: #d7dae2;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  white-space: pre;
+}
+code {
+  background: #10121a;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: #9fd0a5;
+}
+.log {
+  background: #10121a; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-size: 11px; line-height: 1.6; max-height: 260px;
+  overflow: auto; white-space: pre-wrap; word-break: break-all;
+  margin-top: 10px; color: #9fd0a5;
+}
+.ok { color: var(--green); font-size: 13px; }
+.hidden { display: none; }
+footer { text-align: center; color: var(--dim); font-size: 11px; margin-top: 20px; }

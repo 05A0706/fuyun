@@ -1,0 +1,12 @@
+# fuyun 分应用回收策略: 每行 "包名 模式", # 开头为注释, 重启保留
+# 模式: soft / hard / kill / off
+#   soft  = 仅通知应用释放缓存
+#   hard  = soft + 内核级回收 (默认)
+#   kill  = 终止后台进程 (保留任务栈)
+#   off   = 永不回收 (等同加入白名单)
+# 未列出的应用使用 mem_config.txt 中的全局 MODE
+#
+# 示例:
+# com.tencent.mm off
+# com.tencent.mobileqq off
+# com.example.game kill

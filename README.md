@@ -1,4 +1,4 @@
-# fuyun（浮云）
+# 浮云调度(fuyun)
 
 基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，针对**骁龙 8+ Gen1 (sd8+gen1/SM8475)** 与 **骁龙 8 Gen2 (sd8gen2/SM8550)** 适配。
 

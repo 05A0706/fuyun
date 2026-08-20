@@ -82,7 +82,7 @@ install_uperf() {
 }
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
-echo "fuyun调度"
+echo "浮云 26w34.4-B"
 sleep 1
 echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1
@@ -99,7 +99,11 @@ echo "认真看更新日志"
 echo "--- ---- --- --- --- --- --- --- ---"
 sleep 0.2
 echo "更新日志
-优化sdm8+和sdm8g2在各模式的核心分配"
+- 新增中文名：浮云
+- 优化sdm8+和sdm8g2在各模式的核心分配
+- WebUI 新增高级设置与 Doze 白名单管理
+- 全部模式禁用 GPU Boost
+- memctl 优化与稳定性修复"
 echo "--- ---- --- --- --- --- --- --- ---"
 # KernelSU 安装无终端按键环境 (getevent 拿不到按键会死循环), 直接安装
 if [ "$KSU" = "true" ]; then

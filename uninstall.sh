@@ -45,6 +45,12 @@ on_remove() {
         rm -f /data/local/tmp/webuid.pid
     fi
 
+    # stop freq_limit service & 解除频率上限掩码 (还原动态频率)
+    pkill -f "script/freq_limit.sh" 2>/dev/null
+    if [ -f /data/adb/modules/uperf/script/freq_limit.sh ]; then
+        sh /data/adb/modules/uperf/script/freq_limit.sh clear 2>/dev/null
+    fi
+
     # 还原被修改的 modem 网络配置 (5G/SA 优化曾改写过这些文件)
     BACKUP_DIR=/data/adb/uperf_backup
     if [ -d "$BACKUP_DIR" ]; then

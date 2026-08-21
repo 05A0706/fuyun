@@ -35,10 +35,19 @@ sh $BASEDIR/script/initsvc.sh
 # 白名单: /sdcard/Android/yc/uperf/mem_whitelist.txt
 sh "$BASEDIR/script/memctl.sh" &
 
+# 频率限制服务: CPU 最高频率上限 (上限以下 uperf 仍动态调频)
+# 配置: /sdcard/Android/yc/uperf/freq_limit.txt (WebUI「频率限制」卡片可改)
+sh "$BASEDIR/script/freq_limit.sh" watch &
+
 # WebUI 控制台 (http://127.0.0.1:16800, Magisk/KernelSU 模块详情页有入口)
 sh "$BASEDIR/script/webuid.sh" start
 
-# 待机优化
+# 待机优化 (息屏压频省电)
+
+# 说明: 息屏只压 CPU 频率 (关大核 + 800MHz), 不干预应用 ——
+#       不再强制 Doze / 开启系统省电模式 (会限制冻结后台应用即"息屏杀应用")。
+#       息屏应用冻结/清理交给墓碑类专用模块 (本模块不集成);
+#       频率限制的「息屏自动限频」可替代本段压频 (WebUI 可配)。
 
 # 等待系统启动完成
 until [ "$(getprop sys.boot_completed)" = "1" ]; do
@@ -50,11 +59,18 @@ sleep 30
 
 # 配置参数
 SLEEP_INTERVAL=60
-DOZE_WHITELIST="/sdcard/Android/yc/uperf/doze_whitelist.txt"
-LOG_FILE="/sdcard/Android/yc/uperf/screen_log.txt"
-BACKUP_FILE="/sdcard/Android/yc/uperf/screen_backup.txt"
+USER_PATH=/sdcard/Android/yc/uperf
+DOZE_WHITELIST="$USER_PATH/doze_whitelist.txt"
+LOG_FILE="$USER_PATH/screen_log.txt"
+BACKUP_FILE="$USER_PATH/screen_backup.txt"
 LOG_TAG="DeepPowerSaver"
 ENABLE_LOGGING=1 # 设置为0禁用日志
+
+# 息屏压频开关 (安装时选择: 音量上=开启 音量下=关闭; KernelSU 默认开启; 可手动改文件)
+SCREEN_SAVER=1
+SCREEN_SAVER_CFG=$(grep "^SCREEN_SAVER=" "$USER_PATH/screen_saver.txt" 2>/dev/null | head -n 1 | cut -d= -f2)
+[ -n "$SCREEN_SAVER_CFG" ] && SCREEN_SAVER=$SCREEN_SAVER_CFG
+case "$SCREEN_SAVER" in 0|1) ;; *) SCREEN_SAVER=1 ;; esac
 
 # 确保日志目录存在
 mkdir -p /sdcard/Android/yc/uperf
@@ -87,7 +103,7 @@ is_screen_on() {
     dumpsys power 2>/dev/null | grep -qE "mWakefulness=Awake|mHoldingDisplaySuspendBlocker=true"
 }
 
-# 应用Doze白名单
+# 应用Doze白名单 (开机执行一次, 仅豁免不杀应用; 系统原生 Doze 时推送不受影响)
 apply_doze_whitelist() {
     log_msg "应用Doze白名单..."
     while read -r package; do
@@ -106,7 +122,7 @@ apply_doze_whitelist() {
     done < "$DOZE_WHITELIST"
 }
 
-# 优化CPU设置 - 息屏时关闭大核
+# 优化CPU设置 - 息屏时关闭大核 (仅频率/核心, 不干预应用)
 optimize_cpu_power() {
     log_msg "优化CPU设置 - 关闭大核心..."
     # 获取CPU核心信息
@@ -189,40 +205,6 @@ restore_cpu_power() {
     done
 }
 
-# 启用深度Doze模式
-enable_deep_doze() {
-    log_msg "启用深度Doze模式..."
-    # 强制进入Doze模式
-    dumpsys deviceidle force-idle
-    
-    # 设置Doze参数（Android 15兼容）
-    settings put global device_idle_constants \
-        "inactive_to=30000,waiting_to=30000,idle_to=60000,sensing_to=0,locating_to=0"
-    
-    # 应用白名单
-    apply_doze_whitelist
-    
-    # 启用系统省电模式
-    cmd power set-mode 1
-    
-    log_msg "深度Doze模式已启用"
-}
-
-# 禁用深度Doze模式
-disable_deep_doze() {
-    log_msg "禁用深度Doze模式..."
-    # 退出Doze模式
-    dumpsys deviceidle unforce
-    
-    # 恢复默认Doze参数
-    settings put global device_idle_constants ""
-    
-    # 禁用系统省电模式
-    cmd power set-mode 0
-    
-    log_msg "深度Doze模式已禁用"
-}
-
 # 获取CPU状态信息
 get_cpu_status() {
     local status="CPU状态: "
@@ -236,12 +218,12 @@ get_cpu_status() {
 }
 
 # 主服务循环
-log_msg "深度省电服务已启动"
+log_msg "深度省电服务已启动 (息屏压频: $([ "$SCREEN_SAVER" = "1" ] && echo 开 || echo 关))"
 log_msg "设备信息: $(getprop ro.product.model) | Android $(getprop ro.build.version.release)"
 log_msg "日志文件: $LOG_FILE"
 log_msg "白名单文件: $DOZE_WHITELIST"
 
-# 初始白名单应用
+# 初始白名单应用 (仅一次, 不杀应用)
 apply_doze_whitelist
 
 LAST_SCREEN_STATE="on"
@@ -259,8 +241,7 @@ while true; do
         # 屏幕亮起
         if [ "$LAST_SCREEN_STATE" != "on" ]; then
             log_msg "检测到屏幕亮起"
-            restore_cpu_power
-            disable_deep_doze
+            [ "$SCREEN_SAVER" = "1" ] && restore_cpu_power
             LAST_SCREEN_STATE="on"
             log_msg "$(get_cpu_status)"
         fi
@@ -269,8 +250,7 @@ while true; do
         if [ "$LAST_SCREEN_STATE" != "off" ]; then
             log_msg "检测到屏幕关闭"
             sleep 5 # 等待系统进入待机状态
-            optimize_cpu_power
-            enable_deep_doze
+            [ "$SCREEN_SAVER" = "1" ] && optimize_cpu_power
             LAST_SCREEN_STATE="off"
             log_msg "$(get_cpu_status)"
         fi

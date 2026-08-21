@@ -76,20 +76,67 @@ install_uperf() {
     [ ! -e $USER_PATH/mem_apps.txt ] && cp $MODULE_PATH/config/mem_apps.txt $USER_PATH/mem_apps.txt
     [ ! -e $USER_PATH/idle_gov.txt ] && cp $MODULE_PATH/config/idle_gov.txt $USER_PATH/idle_gov.txt
     [ ! -e $USER_PATH/idle_whitelist.txt ] && cp $MODULE_PATH/config/idle_whitelist.txt $USER_PATH/idle_whitelist.txt
+    [ ! -e $USER_PATH/freq_limit.txt ] && cp $MODULE_PATH/config/freq_limit.txt $USER_PATH/freq_limit.txt
     rm -rf $MODULE_PATH/config
 
     set_perm_recursive $BIN_PATH 0 0 0755 0755 u:object_r:system_file:s0
 }
+
+# 息屏省电策略选择 (安装时询问; 升级时保留用户已有选择; 可事后改 screen_saver.txt)
+# 说明: 息屏只压 CPU 频率 (关大核+800MHz), 不干预应用 (无 force-idle/省电模式)
+choose_screen_saver() {
+    [ -f "$USER_PATH/screen_saver.txt" ] && return 0 # 升级保留用户选择
+    local choice= tmpf gpid waited
+    echo "---"
+    echo "息屏省电压频 (不杀应用, 息屏关大核+800MHz):"
+    echo "  音量上 = 开启 (推荐, 墓碑冻结应用+本模块压频)"
+    echo "  音量下 = 关闭 (息屏完全交给系统/墓碑)"
+    echo "  10 秒无按键默认开启"
+    if [ "$KSU" = "true" ]; then
+        echo "KernelSU 环境, 默认开启"
+        echo "SCREEN_SAVER=1" >"$USER_PATH/screen_saver.txt"
+        return 0
+    fi
+    # getevent 阻塞式等待按键: 放后台 + 主循环限时 10 秒, 超时默认开启
+    # (直接轮询时间戳会因 getevent 阻塞而永远轮不到; getevent 失败也会走超时兜底)
+    tmpf="${TMPDIR:-/data/local/tmp}/fuyun_key.txt"
+    rm -f "$tmpf"
+    getevent -qlc 1 >"$tmpf" 2>/dev/null &
+    gpid=$!
+    waited=0
+    while kill -0 "$gpid" 2>/dev/null && [ "$waited" -lt 10 ]; do
+        sleep 1
+        waited=$((waited + 1))
+    done
+    if kill -0 "$gpid" 2>/dev/null; then
+        kill "$gpid" 2>/dev/null
+        choice=""
+    else
+        # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止把刚按过音量上的抬起误当选择
+        choice=$(awk '{ print $3, $4 }' "$tmpf" | grep 'KEY_' | awk '$2 == "DOWN" || $2 == "" { print $1 }')
+    fi
+    rm -f "$tmpf"
+    case "$choice" in
+        KEY_VOLUMEDOWN)
+            echo "息屏压频: 关闭"
+            echo "SCREEN_SAVER=0" >"$USER_PATH/screen_saver.txt"
+            ;;
+        *)
+            echo "息屏压频: 开启"
+            echo "SCREEN_SAVER=1" >"$USER_PATH/screen_saver.txt"
+            ;;
+    esac
+}
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
-echo "浮云 26w34.4-B"
+echo "浮云 26w34.5-B"
 sleep 1
 echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1
 echo "原版Uperf开源地址* https://github.com/yc9559/uperf/ 感谢yc大佬的奠基！"
 sleep 0.5
 echo "感谢coolapk@NekoNemo为调度打下坚固的基础！"
-echo "调度不适配请及时联系本作者  反馈QQ群1098223606"
+echo "调度不适配请及时联系本作者  反馈酷安@洗碗河没有地铁 QQ群1098223606"
 echo "有任何bug问题以及偏见"
 echo "马上甩群里"
 echo "作者第一时间处理"
@@ -99,7 +146,7 @@ echo "认真看更新日志"
 echo "--- ---- --- --- --- --- --- --- ---"
 sleep 0.2
 echo "更新日志
-- 新增中文名：浮云
+- 新增频率限制 (WebUI 可切换, 保留动态频率)
 - 优化sdm8+和sdm8g2在各模式的核心分配
 - WebUI 新增高级设置与 Doze 白名单管理
 - 全部模式禁用 GPU Boost
@@ -109,6 +156,7 @@ echo "--- ---- --- --- --- --- --- --- ---"
 if [ "$KSU" = "true" ]; then
     echo "KernelSU 环境, 跳过按键确认"
     install_uperf
+    choose_screen_saver
 else
     echo "这是一个beta更新 稳定性未知，请谨慎安装"
     echo "按音量上继续 音量下退出"
@@ -129,6 +177,7 @@ else
         KEY_VOLUMEUP)
             echo "开始安装"
             install_uperf
+            choose_screen_saver
             sleep 0.5
             echo "安装成功"
     ;;

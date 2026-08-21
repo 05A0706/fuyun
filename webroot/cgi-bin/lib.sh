@@ -17,6 +17,8 @@ GOV_STATE_FILE="$USER_PATH/idle_gov.state"
 DOZE_WL="$USER_PATH/doze_whitelist.txt"
 PERAPP_FILE="$USER_PATH/perapp_powermode.txt"
 UPERF_JSON="$USER_PATH/uperf.json"
+FREQ_CFG="$USER_PATH/freq_limit.txt"
+FREQ_MASK_SRC=/data/local/tmp/fuyun_freq_cap_
 
 # JSON 头 + CORS (WebUI 页面由 Magisk/KSU 内置服务提供, 跨源访问本 API)
 json_headers() {

@@ -101,6 +101,21 @@ async function refreshStatus() {
     document.getElementById("f-gov-timeout").value = s.idle_timeout;
     document.getElementById("f-gov-thd").value = s.idle_cpu_thd;
     document.getElementById("f-gov-power").value = s.idle_power_w;
+
+    // 频率限制: 状态徽标 + 配置表单 + 大核硬件上限提示
+    const freqCap = s.freq_cap || 0;
+    const freqOn = s.freq_active === 1;
+    const freqTxt = freqOn
+      ? "已限制 " + (freqCap / 1000000).toFixed(2).replace(/\.?0+$/, "") + "GHz"
+      : "动态";
+    badge(document.getElementById("freq-badge"), freqOn, freqTxt);
+    document.getElementById("f-freq-scope").value = s.freq_scope === "all" ? "all" : "big";
+    document.getElementById("f-freq-cap").value = String(freqCap);
+    document.getElementById("f-freq-offscreen").value = String(s.freq_offscreen === 1 ? 1 : 0);
+    document.getElementById("f-freq-offcap").value = String(s.freq_offcap || 1200000);
+    const bigMax = s.freq_big_max_khz || 0;
+    document.getElementById("freq-max-hint").textContent =
+      bigMax > 0 ? "大核硬件上限 " + (bigMax / 1000000).toFixed(2) + " GHz" : "大核硬件上限 -";
   } catch (e) {
     if (e.message !== "switching-to-http") {
       document.getElementById("st-log").textContent = "API 连接失败: " + e.message;
@@ -171,6 +186,31 @@ document.getElementById("btnSaveGov").addEventListener("click", async () => {
   }
   if (okAll) {
     const el = document.getElementById("gov-saved");
+    el.classList.remove("hidden");
+    setTimeout(() => el.classList.add("hidden"), 2000);
+    refreshStatus();
+  }
+});
+
+/* ---------- 频率限制 ---------- */
+document.getElementById("btnSaveFreq").addEventListener("click", async () => {
+  const fields = {
+    FREQ_CAP: "f-freq-cap",
+    FREQ_SCOPE: "f-freq-scope",
+    FREQ_OFFSCREEN: "f-freq-offscreen",
+    FREQ_OFFSCREEN_CAP: "f-freq-offcap",
+  };
+  let okAll = true;
+  for (const [key, fid] of Object.entries(fields)) {
+    const v = document.getElementById(fid).value.trim();
+    if (!v) continue;
+    try {
+      const r = await tryApi("freq_limit.sh", { action: "set", key, value: v });
+      if (!r.ok) { okAll = false; showToast(key + ": " + r.msg); break; }
+    } catch (e) { okAll = false; showToast("失败: " + e.message); break; }
+  }
+  if (okAll) {
+    const el = document.getElementById("freq-saved");
     el.classList.remove("hidden");
     setTimeout(() => el.classList.add("hidden"), 2000);
     refreshStatus();

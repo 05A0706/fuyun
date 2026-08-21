@@ -1,8 +1,8 @@
 {
     "name": "fuyun",
     "author": "Matt_Yang&李诗雅&NetizenNemo&05A0706",
-    "version": "26w34.4-b",
-    "versionCode": 20260820,
+    "version": "26w34.5-b",
+    "versionCode": 20260821,
     "features": {
         "strict": true,
         "pedestal": true
@@ -10,5 +10,5 @@
     "module": "uperf,sfanalysis",
     "state": "/sdcard/Android/yc/uperf/cur_powermode.txt",
     "entry": "/data/powercfg.sh",
-    "projectUrl": "https://github.com/yc9559/uperf"
+    "projectUrl": "https://github.com/05A0706/fuyun"
 }

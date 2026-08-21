@@ -2,14 +2,15 @@
 
 基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，针对**骁龙 8+ Gen1 (sd8+gen1/SM8475)** 与 **骁龙 8 Gen2 (sd8gen2/SM8550)** 适配。
 
-> 当前版本：**26w34.4-b (20260820)**
+> 当前版本：**26w34.5-b (20260821)**
 
 **特性**
 - uperf 调度引擎接管 CPU/GPU 调度（powersave / balance / performance / fast 四档）
 - **辅助调速器**：前台应用持续低占用时（如停留在静态页面）自动压制空闲频率，恢复交互立即还原（可开关，性能档自动让位）
+- **频率限制**：CPU 最高频率硬上限（仅大核 / 全部核心），上限以下保留 uperf 动态调频，WebUI 一键切换（续航/压发热向）；**息屏自动限频**默认开启（息屏自动套用息屏上限，亮屏恢复，不干预应用）
 - Vulkan 渲染启用 + GPU Boost（高通 KGSL 节点接管）
 - 5G/SA 优先策略（修改前自动备份，卸载自动还原）
-- 息屏深度省电（关大核 + 深度 Doze，白名单外置可编辑）
+- 息屏压频省电（安装时可选择；只压频率/关大核，**不杀应用**——息屏应用冻结交给墓碑类专用模块，白名单外置可编辑）
 - 内存优化服务 `memctl`：PSI 内存压力驱动的后台回收 + 推送应用进程清理
 
 ---
@@ -46,7 +47,9 @@
 | `mem_whitelist.txt` | 内存回收白名单（支持 `com.tencent.*` 前缀通配） |
 | `idle_gov.txt` | 辅助调速器配置（开关 / 判定间隔 / 进入超时 / CPU 阈值 / 功率预算） |
 | `idle_whitelist.txt` | 调速器白名单（前台应用命中则永不压制频率，支持前缀通配） |
-| `doze_whitelist.txt` | 息屏 Doze 推送白名单（微信/QQ 等） |
+| `freq_limit.txt` | 频率限制配置（`FREQ_CAP` 上限 kHz / `FREQ_SCOPE` big=仅大核 all=全部 / 息屏自动限频开关与息屏上限） |
+| `screen_saver.txt` | 息屏压频开关 `SCREEN_SAVER`（1=息屏关大核+800MHz 压频，0=关闭；安装时选择，可手动改） |
+| `doze_whitelist.txt` | 息屏 Doze 推送白名单（微信/QQ 等，仅豁免不杀应用） |
 
 ### 辅助调速器快速上手
 
@@ -59,6 +62,24 @@ echo "com.example.app" >> /sdcard/Android/yc/uperf/idle_whitelist.txt
 
 # 更激进的空闲压频 (功率预算从 0.8W 降到 0.5W, 实测不卡再调)
 echo "IDLE_POWER_W=0.5" >> /sdcard/Android/yc/uperf/idle_gov.txt
+```
+
+### 频率限制快速上手
+
+```sh
+# 查看当前频率上限状态 (0=动态不限制)
+cat /sdcard/Android/yc/uperf/freq_limit.txt
+
+# 命令行直接限制大核最高 1.8GHz (WebUI「频率限制」卡片可一键切换)
+echo "FREQ_CAP=1800000" >> /sdcard/Android/yc/uperf/freq_limit.txt
+
+# 恢复动态频率
+echo "FREQ_CAP=0" >> /sdcard/Android/yc/uperf/freq_limit.txt
+# 上限以下 uperf 仍动态调频; 限制立即生效 (守护每 60s 巡检, WebUI 保存立即应用)
+
+# 息屏自动限频 (默认开启): 息屏时自动套用 1.2GHz, 亮屏恢复主上限
+# 只压频率不干预应用; 息屏应用冻结/清理请搭配墓碑类模块
+echo "FREQ_OFFSCREEN_CAP=1200000" >> /sdcard/Android/yc/uperf/freq_limit.txt
 ```
 
 ### 内存优化快速上手
@@ -97,6 +118,7 @@ Magisk / KernelSU 的**模块详情页 → WebUI** 即可打开控制台（或�
 - 一键切换性能模式（省电/均衡/性能/极速）
 - 可视化配置内存优化全部参数（模式、PSI 阈值、间隔、空闲淘汰、切换回收等）
 - 配置辅助调速器（开关、判定间隔、进入超时、CPU 阈值、功率预算）与调速器白名单
+- **频率限制**：一键切换 CPU 最高频率上限（动态 / 多档上限，仅大核或全部核心），实时显示大核硬件上限
 - 管理分应用回收策略（`mem_apps.txt`）与白名单（`mem_whitelist.txt`）
 - 管理息屏 Doze 白名单（`doze_whitelist.txt`）
 - **高级设置**：直接编辑 `uperf.json` / `mem_config.txt` / `idle_gov.txt` / `perapp_powermode.txt`，保存前自动备份 `.bak`

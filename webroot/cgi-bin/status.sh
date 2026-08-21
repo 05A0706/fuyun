@@ -59,6 +59,25 @@ IDLEGOV_POWER=$(grep "^IDLE_POWER_W=" "$IDLE_CFG" 2>/dev/null | head -n 1 | cut 
 IDLEGOV_ACTIVE=0
 [ -f "$GOV_STATE_FILE" ] && IDLEGOV_ACTIVE=1
 
+# 频率限制状态 (与 freq_limit.sh 默认值保持一致)
+FREQ_CAP=$(grep "^FREQ_CAP=" "$FREQ_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+FREQ_SCOPE=$(grep "^FREQ_SCOPE=" "$FREQ_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+FREQ_OFFSCREEN=$(grep "^FREQ_OFFSCREEN=" "$FREQ_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+FREQ_OFFCAP=$(grep "^FREQ_OFFSCREEN_CAP=" "$FREQ_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+echo "$FREQ_CAP" | grep -qE '^[0-9]+$' || FREQ_CAP=0
+case "$FREQ_SCOPE" in big|all) ;; *) FREQ_SCOPE=big ;; esac
+case "$FREQ_OFFSCREEN" in 0|1) ;; *) FREQ_OFFSCREEN=1 ;; esac
+echo "$FREQ_OFFCAP" | grep -qE '^[0-9]+$' || FREQ_OFFCAP=1200000
+FREQ_ACTIVE=0
+grep -q "^$FREQ_MASK_SRC" /proc/mounts 2>/dev/null && FREQ_ACTIVE=1
+FREQ_BIG_MAX=0
+for p in /sys/devices/system/cpu/cpufreq/policy*; do
+    [ -f "$p/cpuinfo_max_freq" ] || continue
+    f=$(cat "$p/cpuinfo_max_freq" 2>/dev/null)
+    case "$f" in ''|*[!0-9]*) continue ;; esac
+    [ "$f" -gt "$FREQ_BIG_MAX" ] && FREQ_BIG_MAX=$f
+done
+
 printf '{'
 printf '"uperf_running":%s,' "$UPERF_RUN"
 printf '"memctl_running":%s,' "$MEMCTL_RUN"
@@ -77,6 +96,12 @@ printf '"idle_interval":%s,' "$IDLEGOV_INTERVAL"
 printf '"idle_timeout":%s,' "$IDLEGOV_TIMEOUT"
 printf '"idle_cpu_thd":%s,' "$IDLEGOV_THD"
 printf '"idle_power_w":%s,' "$IDLEGOV_POWER"
+printf '"freq_cap":%s,' "$FREQ_CAP"
+printf '"freq_scope":"%s",' "$FREQ_SCOPE"
+printf '"freq_active":%s,' "$FREQ_ACTIVE"
+printf '"freq_offscreen":%s,' "$FREQ_OFFSCREEN"
+printf '"freq_offcap":%s,' "$FREQ_OFFCAP"
+printf '"freq_big_max_khz":%s,' "${FREQ_BIG_MAX:-0}"
 printf '"foreground":"%s",' "$FG"
 printf '"last_log":"%s"' "$LAST_LOG"
 printf '}\n'

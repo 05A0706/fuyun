@@ -38,6 +38,61 @@
     <p class="hint">切换立即生效，写入 cur_powermode.txt 并通知 uperf</p>
   </section>
 
+  <!-- 频率限制 -->
+  <section class="card">
+    <h2>频率限制 <span id="freq-badge" class="badge na">动态</span></h2>
+    <p class="hint">设置 CPU 最高频率上限，上限以下仍由 uperf 动态调频（保留动态频率）；适合续航向 / 压制发热</p>
+    <div class="form">
+      <div class="row">
+        <label for="f-freq-scope">限制范围</label>
+        <select id="f-freq-scope">
+          <option value="big">仅大核（最高频簇）</option>
+          <option value="all">全部核心</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="f-freq-cap">频率上限</label>
+        <select id="f-freq-cap">
+          <option value="0">动态（不限制）</option>
+          <option value="2400000">2.4 GHz</option>
+          <option value="2200000">2.2 GHz</option>
+          <option value="2000000">2.0 GHz</option>
+          <option value="1800000">1.8 GHz</option>
+          <option value="1600000">1.6 GHz</option>
+          <option value="1400000">1.4 GHz</option>
+          <option value="1200000">1.2 GHz</option>
+          <option value="1000000">1.0 GHz</option>
+          <option value="800000">0.8 GHz</option>
+        </select>
+        <span class="hint" id="freq-max-hint">大核硬件上限 -</span>
+      </div>
+      <div class="row">
+        <label for="f-freq-offscreen">息屏自动限频</label>
+        <select id="f-freq-offscreen">
+          <option value="1">启用</option>
+          <option value="0">停用</option>
+        </select>
+        <span class="hint">息屏时自动套用息屏上限，亮屏恢复；不干预应用</span>
+      </div>
+      <div class="row">
+        <label for="f-freq-offcap">息屏上限</label>
+        <select id="f-freq-offcap">
+          <option value="0">跟随主上限</option>
+          <option value="1800000">1.8 GHz</option>
+          <option value="1600000">1.6 GHz</option>
+          <option value="1400000">1.4 GHz</option>
+          <option value="1200000">1.2 GHz</option>
+          <option value="1000000">1.0 GHz</option>
+          <option value="800000">0.8 GHz</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="btnSaveFreq" class="btn">保存并应用</button>
+        <span id="freq-saved" class="ok hidden">已应用 ✓</span>
+      </div>
+    </div>
+  </section>
+
   <!-- 内存优化配置 -->
   <section class="card">
     <h2>内存优化配置</h2>
@@ -234,7 +289,7 @@
 </main>
 
 <footer>
-  <span>fuyun 26w34.4-b · 本机服务 127.0.0.1:16800</span>
+  <span>浮云调度进程运行中</span>
 </footer>
 <script src="app.js"></script>
 </body>

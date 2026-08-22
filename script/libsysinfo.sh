@@ -117,7 +117,7 @@ _get_lahaina_type() {
 get_config_name() {
     case "$1" in
     "pineapple") echo "sdm8g3" ;; # 骁龙 8 Gen3 (SM8650)
-    "sun") echo "sdm8e" ;;        # 骁龙 8 Elite / 8 Gen4 (SM8750)
+    "sun") echo "sdm8e" ;;        # 骁龙 8 Elite (SM8750)
     "shark") echo "sdm8e5" ;;    # 骁龙 8 Elite Gen5 / 8e5 (SM8850) 候选代号
     "kalama") echo "sdm8g2" ;;
     "taro") echo "sdm8+" ;;

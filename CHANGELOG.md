@@ -2,7 +2,7 @@
 
 ## fuyun 26w34.7-b (202608222)
 
-### 新增平台支持: 骁龙 8 Gen3 / 8 Elite (8 Gen4) / 8 Elite Gen5 (8e5)
+### 新增平台支持: 骁龙 8 Gen3 / 8 Elite / 8 Elite Gen5 (8e5)
 - 新增配置 `sdm8g3.json`（8 Gen3/SM8650，1+5+2：X4 3.3G + A720×5 + A520×2，Adreno 750）
 - 新增配置 `sdm8e.json`（8 Elite/SM8750，2+6：2×Oryon 4.32G + 6×Oryon 3.53G，Adreno 830）
 - 新增配置 `sdm8e5.json`（8 Elite Gen5/8e5/SM8850，第三代 Oryon 2+6，4.6G 级，参数为占位初版）

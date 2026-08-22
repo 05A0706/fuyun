@@ -135,7 +135,7 @@ choose_screen_saver() {
 }
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
-echo "浮云 26w34.7-B"
+echo "浮云 26w34.6-B"
 sleep 1
 echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1

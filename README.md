@@ -1,6 +1,6 @@
 # 浮云调度(fuyun)
 
-基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，支持**骁龙 8+ Gen1 (SM8475)、8 Gen2 (SM8550)、8 Gen3 (SM8650)、8 Elite / 8 Gen4 (SM8750)、8 Elite Gen5 / 8 Gen5 (SM8850)**。
+基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，支持**骁龙 8+ Gen1 (SM8475)、8 Gen2 (SM8550)、8 Gen3 (SM8650)、8 Elite (SM8750)、8 Elite Gen5 (SM8850)**。
 
 > 当前版本：**26w34.7-b (202608222)**
 

@@ -1,8 +1,8 @@
 {
     "name": "fuyun",
     "author": "Matt_Yang&李诗雅&NetizenNemo&05A0706",
-    "version": "26w34.5-b",
-    "versionCode": 20260821,
+    "version": "26w34.7-b",
+    "versionCode": 20260822,
     "features": {
         "strict": true,
         "pedestal": true

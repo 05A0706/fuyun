@@ -47,3 +47,19 @@ PUSH_KEEP=com.tencent.mm|com.tencent.mobileqq|com.tencent.tim
 
 # 推送应用需保留的进程特征 (cmdline 关键词, | 分隔)
 KEEP_CMDLINE=push|daemon|msf
+
+# 主动压入 zram: 1=启用 0=关闭
+# 对空闲后台进程尝试把匿名内存换出到 zram, 进程保活, 冷启动更快
+ZRAM_RECLAIM=1
+
+# 单进程每次尝试压入 zram 的内存量 (cgroup v2 memory.reclaim anon 回收)
+ZRAM_RECLAIM_SIZE=64M
+
+# 后台进程闲置多少分钟后开始压入 zram (沿用 last_used 判定)
+ZRAM_IDLE_MIN=5
+
+# 杀进程后是否触发系统缓存清理 (pm trim-caches)
+CLEAN_CACHE_AFTER_KILL=1
+
+# 系统缓存清理大小 (传给 pm trim-caches)
+TRIM_CACHE_SIZE=512M

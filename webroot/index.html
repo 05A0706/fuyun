@@ -93,6 +93,55 @@
     </div>
   </section>
 
+  <!-- CPU 频率范围 -->
+  <section class="card">
+    <h2>CPU 频率范围 <span id="freq-range-badge" class="badge na">动态</span></h2>
+    <p class="hint">分别设置小核 / 中核 / 大核的频率下限与上限，0 = 动态；min=max = 锁频。只允许选择当前 SoC 支持频点。</p>
+    <div class="form">
+      <div class="row">
+        <label for="f-rng-enable">启用频率范围</label>
+        <select id="f-rng-enable">
+          <option value="0">停用（动态）</option>
+          <option value="1">启用</option>
+        </select>
+        <span class="hint" id="freq-range-soc">SoC -</span>
+      </div>
+      <div class="row">
+        <label>小核</label>
+        <div class="inline2">
+          <span>min</span>
+          <select id="f-rng-lmin"></select>
+          <span>max</span>
+          <select id="f-rng-lmax"></select>
+        </div>
+      </div>
+      <div class="row">
+        <label>中核</label>
+        <div class="inline2">
+          <span>min</span>
+          <select id="f-rng-mmin"></select>
+          <span>max</span>
+          <select id="f-rng-mmax"></select>
+        </div>
+      </div>
+      <div class="row">
+        <label>大核</label>
+        <div class="inline2">
+          <span>min</span>
+          <select id="f-rng-bmin"></select>
+          <span>max</span>
+          <select id="f-rng-bmax"></select>
+        </div>
+      </div>
+      <div class="row">
+        <button id="btnSaveFreqRange" class="btn">保存并应用</button>
+        <button id="btnClearFreqRange" class="btn warn">恢复动态</button>
+        <span id="freq-range-saved" class="ok hidden">已应用 ✓</span>
+      </div>
+      <p class="hint" id="freq-range-policies">当前实际频率：-</p>
+    </div>
+  </section>
+
   <!-- 内存优化配置 -->
   <section class="card">
     <h2>内存优化配置</h2>

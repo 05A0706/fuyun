@@ -30,6 +30,14 @@ SWITCH_RECLAIM=1
 PUSH_KEEP="com.tencent.mm|com.tencent.mobileqq|com.tencent.tim"
 KEEP_CMDLINE="push|daemon|msf"
 
+# zram 主动压制 / 杀后清理
+ZRAM_RECLAIM=1
+ZRAM_RECLAIM_SIZE=64M
+ZRAM_IDLE_MIN=5
+CLEAN_CACHE_AFTER_KILL=1
+TRIM_CACHE_SIZE=512M
+KILLED_ANY=0
+
 # 分应用策略表 (由 load_apps 填充): "pkg:mode pkg:mode ..."
 APPS_RULES=""
 
@@ -92,6 +100,11 @@ load_cfg() {
             SWITCH_RECLAIM) SWITCH_RECLAIM=$v ;;
             PUSH_KEEP)      PUSH_KEEP=$v ;;
             KEEP_CMDLINE)   KEEP_CMDLINE=$v ;;
+            ZRAM_RECLAIM)   ZRAM_RECLAIM=$v ;;
+            ZRAM_RECLAIM_SIZE) ZRAM_RECLAIM_SIZE=$v ;;
+            ZRAM_IDLE_MIN)  ZRAM_IDLE_MIN=$v ;;
+            CLEAN_CACHE_AFTER_KILL) CLEAN_CACHE_AFTER_KILL=$v ;;
+            TRIM_CACHE_SIZE) TRIM_CACHE_SIZE=$v ;;
         esac
     done <"$CFG"
 
@@ -129,6 +142,14 @@ load_cfg() {
     case "$KEEP_CMDLINE" in
         *[!A-Za-z0-9_.|*+-]*) KEEP_CMDLINE="push|daemon|msf" ;;
     esac
+    case "$ZRAM_RECLAIM" in 0|1) ;; *) ZRAM_RECLAIM=1 ;; esac
+    echo "$ZRAM_RECLAIM_SIZE" | grep -qE '^[0-9]+[KMG]?$' || ZRAM_RECLAIM_SIZE=64M
+    case "$ZRAM_IDLE_MIN" in
+        ''|*[!0-9]*) ZRAM_IDLE_MIN=5 ;;
+    esac
+    [ "$ZRAM_IDLE_MIN" -le 1440 ] || ZRAM_IDLE_MIN=5
+    case "$CLEAN_CACHE_AFTER_KILL" in 0|1) ;; *) CLEAN_CACHE_AFTER_KILL=1 ;; esac
+    echo "$TRIM_CACHE_SIZE" | grep -qE '^[0-9]+[KMG]?$' || TRIM_CACHE_SIZE=512M
 }
 
 # 读取辅助调速器配置 (仅白名单键, 与 load_cfg 相同防注入策略)
@@ -276,6 +297,7 @@ idle_kill() {
         [ "$mode" = "off" ] && continue
         is_idle "$pkg" "$now" || continue
         am kill "$pkg" 2>/dev/null
+        KILLED_ANY=1
         log "空闲淘汰: $pkg (闲置超 ${IDLE_KILL_MIN} 分钟)"
     done
 }
@@ -374,6 +396,69 @@ reclaim_pkg() {
         cg=$(awk -F: '{print $NF}' "/proc/$pid/cgroup" 2>/dev/null | head -n 1)
         if [ -n "$cg" ] && [ -w "/sys/fs/cgroup$cg/memory.reclaim" ]; then
             echo "0 $HARD_RECLAIM" >"/sys/fs/cgroup$cg/memory.reclaim" 2>/dev/null
+        fi
+    done
+}
+
+# ============ zram 主动压制 ============
+# 把空闲后台进程的匿名内存换出到 zram, 进程保活、冷启动更快
+
+ZRAM_PUSHED_FILE="$USER_PATH/zram_pushed.txt"
+
+# zram 是否启用 (swap 中存在 zram)
+zram_enabled() {
+    swapon -s 2>/dev/null | grep -qi zram
+}
+
+# $1: pid; 尝试 cgroup v2 anon 回收 (换出到 zram), 失败自动忽略
+push_pid_to_zram() {
+    local pid="$1" cg
+    cg=$(awk -F: '{print $NF}' "/proc/$pid/cgroup" 2>/dev/null | head -n 1)
+    [ -n "$cg" ] || return 1
+    [ -w "/sys/fs/cgroup$cg/memory.reclaim" ] || return 1
+    echo "1 $ZRAM_RECLAIM_SIZE" >"/sys/fs/cgroup$cg/memory.reclaim" 2>/dev/null
+}
+
+# $1: 包名; 输出上次 zram 压制时间戳 (无输出空)
+zram_last_pushed() {
+    grep "^$1 " "$ZRAM_PUSHED_FILE" 2>/dev/null | awk '{print $2}' | tail -n 1
+}
+
+# $1: 包名 $2: now; 记录压制时间
+zram_mark_pushed() {
+    sed -i "/^$1 /d" "$ZRAM_PUSHED_FILE" 2>/dev/null
+    echo "$1 $2" >>"$ZRAM_PUSHED_FILE" 2>/dev/null
+}
+
+# 对满足条件的空闲进程尝试压入 zram
+# $1: 前台包名 $2: now
+zram_push_idle() {
+    [ "$ZRAM_RECLAIM" = "1" ] || return 0
+    zram_enabled || return 0
+    local fg="$1" now="$2" pid cmdline pkg uid mode last
+    for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
+        [ -r "/proc/$pid/cmdline" ] || continue
+        cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null)
+        [ -n "$cmdline" ] || continue
+        pkg=${cmdline%% *}
+        case "$pkg" in
+            *:*|/system/*|/vendor/*|/apex/*|zygote|zygote64) continue ;;
+        esac
+        uid=$(stat -c %u "/proc/$pid" 2>/dev/null)
+        [ "${uid:-0}" -ge 10000 ] || continue
+        [ "$pkg" = "$fg" ] && continue
+        is_whitelisted "$pkg" && continue
+        mode=$(get_app_mode "$pkg")
+        [ "$mode" = "off" ] && continue
+        is_idle "$pkg" "$now" || continue
+        last=$(zram_last_pushed "$pkg")
+        # 有记录且距上次压制不足 ZRAM_IDLE_MIN 分钟则跳过
+        if [ -n "$last" ] && [ $((now - last)) -lt $((ZRAM_IDLE_MIN * 60)) ] 2>/dev/null; then
+            continue
+        fi
+        if push_pid_to_zram "$pid"; then
+            zram_mark_pushed "$pkg" "$now"
+            log "zram 压制: $pkg pid=$pid"
         fi
     done
 }
@@ -793,12 +878,27 @@ main() {
             lu_lines=$(wc -l <"$LAST_USED_FILE" 2>/dev/null)
             [ "${lu_lines:-0}" -gt 500 ] && tail -n 200 "$LAST_USED_FILE" >"$LAST_USED_FILE.tmp" && mv "$LAST_USED_FILE.tmp" "$LAST_USED_FILE"
         fi
+        # zram 压制记录防膨胀
+        if [ -f "$ZRAM_PUSHED_FILE" ]; then
+            local zp_lines
+            zp_lines=$(wc -l <"$ZRAM_PUSHED_FILE" 2>/dev/null)
+            [ "${zp_lines:-0}" -gt 500 ] && tail -n 200 "$ZRAM_PUSHED_FILE" >"$ZRAM_PUSHED_FILE.tmp" && mv "$ZRAM_PUSHED_FILE.tmp" "$ZRAM_PUSHED_FILE"
+        fi
 
         # 空闲淘汰 (开机保护期内跳过, 等 last_used 表建立)
+        KILLED_ANY=0
         if [ "$IDLE_KILL_MIN" -gt 0 ] && [ $((now - start_epoch)) -ge $((IDLE_KILL_MIN * 60)) ]; then
             idle_kill "$fg" "$now"
         fi
+        # 杀进程后清理系统缓存 (可选)
+        if [ "$KILLED_ANY" = "1" ] && [ "$CLEAN_CACHE_AFTER_KILL" = "1" ]; then
+            pm trim-caches "$TRIM_CACHE_SIZE" 2>/dev/null
+            log "空闲淘汰后触发缓存清理 (${TRIM_CACHE_SIZE})"
+            KILLED_ANY=0
+        fi
         clean_push_apps "$fg" "$now"
+        # 主动把空闲后台进程匿名内存压入 zram (进程保活)
+        zram_push_idle "$fg" "$now"
 
         # 仅内存压力高时才回收, 不与系统 LMKD 抢活
         if [ "$skip_reclaim" = "1" ]; then

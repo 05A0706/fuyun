@@ -35,9 +35,15 @@ sh $BASEDIR/script/initsvc.sh
 # 白名单: /sdcard/Android/yc/uperf/mem_whitelist.txt
 sh "$BASEDIR/script/memctl.sh" &
 
-# 频率限制服务: CPU 最高频率上限 (上限以下 uperf 仍动态调频)
-# 配置: /sdcard/Android/yc/uperf/freq_limit.txt (WebUI「频率限制」卡片可改)
+# 频率控制服务: 全局上限 + 小/中/大核 min/max (WebUI「频率限制」「CPU 频率范围」可改)
 sh "$BASEDIR/script/freq_limit.sh" watch &
+
+# 第三方插件 boot 阶段 (插件放在 /sdcard/Android/yc/uperf/plugins/, 后台执行不阻塞开机)
+if [ -f "$BASEDIR/script/plugin.sh" ]; then
+    MODDIR="$BASEDIR"
+    . "$BASEDIR/script/plugin.sh"
+    run_plugins boot &
+fi
 
 # WebUI 控制台 (http://127.0.0.1:16800, Magisk/KernelSU 模块详情页有入口)
 sh "$BASEDIR/script/webuid.sh" start

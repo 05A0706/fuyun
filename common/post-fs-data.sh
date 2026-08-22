@@ -24,11 +24,32 @@ else
     true >$MODDIR/flag/need_recuser
 fi
 
-# Enable Vulkan (Credit @tryigitx, SDK<34 需要额外指定渲染后端)
-if [ "$(getprop ro.build.version.sdk)" -lt 34 ]; then
-    resetprop debug.hwui.renderer skiavk
+# Vulkan / OpenGL 按持久化状态应用 (默认 Vulkan; action.sh 可切换)
+mkdir -p /data/adb/uperf 2>/dev/null
+VULKAN_STATE=/data/adb/uperf/vulkan.state
+VULKAN_ON=1
+if [ -f "$VULKAN_STATE" ]; then
+    s=$(cat "$VULKAN_STATE" 2>/dev/null)
+    [ "$s" = "0" ] && VULKAN_ON=0
 fi
-resetprop ro.hwui.use_vulkan true
+if [ "$VULKAN_ON" = "1" ]; then
+    # Enable Vulkan (Credit @tryigitx, SDK<34 需要额外指定渲染后端)
+    if [ "$(getprop ro.build.version.sdk)" -lt 34 ]; then
+        resetprop debug.hwui.renderer skiavk
+    fi
+    resetprop ro.hwui.use_vulkan true
+    resetprop debug.renderengine.backend skiavkthreaded
+    resetprop debug.renderengine.vulkan true
+    resetprop debug.renderengine.graphite true
+    resetprop debug.egl.hw 1
+else
+    resetprop ro.hwui.use_vulkan false
+    resetprop debug.hwui.renderer opengl
+    resetprop debug.renderengine.backend threaded
+    resetprop debug.renderengine.vulkan false
+    resetprop debug.renderengine.graphite false
+    resetprop debug.egl.hw 0
+fi
 
 # Vip Features -If you do not have a VIP driver, it may also cause instability during bootup.
 lock_val() {

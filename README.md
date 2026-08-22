@@ -2,16 +2,19 @@
 
 基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，针对**骁龙 8+ Gen1 (sd8+gen1/SM8475)** 与 **骁龙 8 Gen2 (sd8gen2/SM8550)** 适配。
 
-> 当前版本：**26w34.5-b (20260821)**
+> 当前版本：**26w34.6-b (20260822)**
 
 **特性**
 - uperf 调度引擎接管 CPU/GPU 调度（powersave / balance / performance / fast 四档）
 - **辅助调速器**：前台应用持续低占用时（如停留在静态页面）自动压制空闲频率，恢复交互立即还原（可开关，性能档自动让位）
 - **频率限制**：CPU 最高频率硬上限（仅大核 / 全部核心），上限以下保留 uperf 动态调频，WebUI 一键切换（续航/压发热向）；**息屏自动限频**默认开启（息屏自动套用息屏上限，亮屏恢复，不干预应用）
+- **CPU 频率范围**：小核 / 中核 / 大核可分别设置频率下限与上限，支持任意 SoC 支持频点，min=max 即锁频；WebUI「CPU 频率范围」独立界面操作
+- **第三方插件接口**：`/sdcard/Android/yc/uperf/plugins/` 下放置 `.sh` 或 `.json` 插件即可导入，模块在 apply / clear / boot 阶段自动调用，便于后续扩展而不改引擎
+- **Vulkan 开关**：Magisk 模块 Action 里按音量上开启 Vulkan、音量下还原 OpenGL，状态持久化，开机按上次选择生效
 - Vulkan 渲染启用 + GPU Boost（高通 KGSL 节点接管）
 - 5G/SA 优先策略（修改前自动备份，卸载自动还原）
 - 息屏压频省电（安装时可选择；只压频率/关大核，**不杀应用**——息屏应用冻结交给墓碑类专用模块，白名单外置可编辑）
-- 内存优化服务 `memctl`：PSI 内存压力驱动的后台回收 + 推送应用进程清理
+- 内存优化服务 `memctl`：PSI 内存压力驱动的后台回收 + 推送应用进程清理 + **主动把空闲后台进程压入 zram** + 长时间未用进程杀掉后清理缓存
 
 ---
 
@@ -42,12 +45,13 @@
 | `uperf.json` | uperf 调度配置（安装时按 SoC 自动选择，勿轻易改） |
 | `cur_powermode.txt` | 当前性能模式：`powersave` / `balance` / `performance` / `fast` |
 | `perapp_powermode.txt` | 分应用性能模式（V-Tools 兼容） |
-| `mem_config.txt` | 内存优化总配置：`MODE`(soft/hard/kill)、`PSI_THRESHOLD`、`PUSH_KEEP` 等 |
+| `mem_config.txt` | 内存优化总配置：`MODE`(soft/hard/kill)、`PSI_THRESHOLD`、`PUSH_KEEP`、`ZRAM_RECLAIM` 等 |
 | `mem_apps.txt` | 分应用回收策略：`包名 模式`（soft/hard/kill/off） |
 | `mem_whitelist.txt` | 内存回收白名单（支持 `com.tencent.*` 前缀通配） |
 | `idle_gov.txt` | 辅助调速器配置（开关 / 判定间隔 / 进入超时 / CPU 阈值 / 功率预算） |
 | `idle_whitelist.txt` | 调速器白名单（前台应用命中则永不压制频率，支持前缀通配） |
 | `freq_limit.txt` | 频率限制配置（`FREQ_CAP` 上限 kHz / `FREQ_SCOPE` big=仅大核 all=全部 / 息屏自动限频开关与息屏上限） |
+| `freq_range.txt` | CPU 频率范围配置（小/中/大核 `MIN` / `MAX`，0=动态，非 0=SoC 支持频点） |
 | `screen_saver.txt` | 息屏压频开关 `SCREEN_SAVER`（1=息屏关大核+800MHz 压频，0=关闭；安装时选择，可手动改） |
 | `doze_whitelist.txt` | 息屏 Doze 推送白名单（微信/QQ 等，仅豁免不杀应用） |
 
@@ -119,6 +123,7 @@ Magisk / KernelSU 的**模块详情页 → WebUI** 即可打开控制台（或�
 - 可视化配置内存优化全部参数（模式、PSI 阈值、间隔、空闲淘汰、切换回收等）
 - 配置辅助调速器（开关、判定间隔、进入超时、CPU 阈值、功率预算）与调速器白名单
 - **频率限制**：一键切换 CPU 最高频率上限（动态 / 多档上限，仅大核或全部核心），实时显示大核硬件上限
+- **CPU 频率范围**：分别设置小核 / 中核 / 大核的频率下限与上限，下拉框只显示当前 SoC 支持频点
 - 管理分应用回收策略（`mem_apps.txt`）与白名单（`mem_whitelist.txt`）
 - 管理息屏 Doze 白名单（`doze_whitelist.txt`）
 - **高级设置**：直接编辑 `uperf.json` / `mem_config.txt` / `idle_gov.txt` / `perapp_powermode.txt`，保存前自动备份 `.bak`

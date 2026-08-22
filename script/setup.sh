@@ -77,6 +77,7 @@ install_uperf() {
     [ ! -e $USER_PATH/idle_gov.txt ] && cp $MODULE_PATH/config/idle_gov.txt $USER_PATH/idle_gov.txt
     [ ! -e $USER_PATH/idle_whitelist.txt ] && cp $MODULE_PATH/config/idle_whitelist.txt $USER_PATH/idle_whitelist.txt
     [ ! -e $USER_PATH/freq_limit.txt ] && cp $MODULE_PATH/config/freq_limit.txt $USER_PATH/freq_limit.txt
+    [ ! -e $USER_PATH/freq_range.txt ] && cp $MODULE_PATH/config/freq_range.txt $USER_PATH/freq_range.txt
     rm -rf $MODULE_PATH/config
 
     set_perm_recursive $BIN_PATH 0 0 0755 0755 u:object_r:system_file:s0
@@ -135,22 +136,49 @@ echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1
 echo "原版Uperf开源地址* https://github.com/yc9559/uperf/ 感谢yc大佬的奠基！"
 sleep 0.5
-echo "感谢coolapk@NekoNemo为调度打下坚固的基础！"
+echo "感谢酷安@yc9559@NekoNemo 为调度打下坚固的基础！"
+echo "感谢志愿者酷安@雾兮雨 为调度提供了大量测试和反馈"
 echo "调度不适配请及时联系本作者  反馈酷安@洗碗河没有地铁 QQ群1098223606"
 echo "有任何bug问题以及偏见"
-echo "马上甩群里"
+echo "马上提出"
 echo "作者第一时间处理"
 echo "认真看更新日志"
 echo "认真看更新日志"
 echo "认真看更新日志"
 echo "--- ---- --- --- --- --- --- --- ---"
 sleep 0.2
-echo "更新日志
-- 新增频率限制 (WebUI 可切换, 保留动态频率)
-- 优化sdm8+和sdm8g2在各模式的核心分配
-- WebUI 新增高级设置与 Doze 白名单管理
-- 全部模式禁用 GPU Boost
-- memctl 优化与稳定性修复"
+echo "更新日志"
+echo "新增 Vulkan 音量键切换
+Magisk 模块 Action 中监听音量键：音量上 = 开启 Vulkan，音量下 = 还原 OpenGL
+状态持久化到/data/adb/uperf/vulkan.state，开机由post-fs-data.sh按状态应用
+还原 OpenGL 时同时关闭ro.hwui.use_vulkan/debug.renderengine.vulkan/debug.renderengine.graphite等 Vulkan 属性
+
+memctl 主动压入 zram + 清理
+新增RAM_RECLAIM/ZRAM_RECLAIM_SIZE/ZRAM_IDLE_MIN配置
+对空闲后台进程尝试 cgroup v2 anon 回收，把匿名内存换出到 zram，进程保活
+沿用last_used判定空闲，避免频繁压制
+杀进程后可选触发pm trim-caches清理系统缓存（CLEAN_CACHE_AFTER_KILL/TRIM_CACHE_SIZE）
+
+
+新增 CPU 频率范围（小/中/大核 min/max 可调）
+WebUI 新增「CPU 频率范围」独立界面：分别设置小核 / 中核 / 大核的频率下限与上限，0=动态，min=max=锁频
+内置 8+ Gen1 / 8 Gen2 支持频点表，下拉框只显示当前 SoC 合法频点，非法值自动拒绝并记录日志
+扩展freq_limit.sh为统一频率控制服务：全局上限与分簇 min/max 共用一套 bind-mount 掩码，避免互相覆盖
+自动识别 policy 属于小核/中核/大核，按簇应用scaling_min_freq/scaling_max_freq
+配置：/sdcard/Android/yc/uperf/freq_range.txt
+
+
+新增第三方插件接口
+插件目录/sdcard/Android/yc/uperf/plugins/，放置.sh或者.json插件即可
+调用阶段apply（频率控制应用后）、clear（清除后）、boot（开机服务就绪后）
+环境变量FUYUN_STAGE/FUYUN_SOC/FUYUN_MODULE_DIR/FUYUN_USER_PATH/FUYUN_PLUGIN_DIR
+插件输出记录到plugin.log，插件失败不影响模块主功能
+
+
+插件支持 JSON 导入
+plugins/目录除了.sh，现在支持.json描述插件
+JSON 支持name/enabled/stages/command/file字段
+直接把 JSON 文件放进plugins/即自动导入生效"
 echo "--- ---- --- --- --- --- --- --- ---"
 # KernelSU 安装无终端按键环境 (getevent 拿不到按键会死循环), 直接安装
 if [ "$KSU" = "true" ]; then

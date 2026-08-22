@@ -217,6 +217,73 @@ document.getElementById("btnSaveFreq").addEventListener("click", async () => {
   }
 });
 
+/* ---------- CPU 频率范围 ---------- */
+function fillFreqSelect(el, freqs, current) {
+  el.innerHTML = '<option value="0">动态</option>';
+  (freqs || []).forEach((f) => {
+    const opt = document.createElement("option");
+    opt.value = String(f);
+    opt.textContent = (f / 1000000).toFixed(3).replace(/\.?0+$/, "") + " GHz";
+    if (String(f) === String(current)) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+async function loadFreqRange() {
+  try {
+    const r = await tryApi("freq_range.sh", { action: "get" });
+    document.getElementById("freq-range-soc").textContent = "SoC " + (r.soc || "-");
+    document.getElementById("f-rng-enable").value = String(r.enable || 0);
+    fillFreqSelect(document.getElementById("f-rng-lmin"), r.freqs_little, r.little_min);
+    fillFreqSelect(document.getElementById("f-rng-lmax"), r.freqs_little, r.little_max);
+    fillFreqSelect(document.getElementById("f-rng-mmin"), r.freqs_mid, r.mid_min);
+    fillFreqSelect(document.getElementById("f-rng-mmax"), r.freqs_mid, r.mid_max);
+    fillFreqSelect(document.getElementById("f-rng-bmin"), r.freqs_big, r.big_min);
+    fillFreqSelect(document.getElementById("f-rng-bmax"), r.freqs_big, r.big_max);
+    const active = r.enable === 1;
+    badge(document.getElementById("freq-range-badge"), active, active ? "已启用" : "动态");
+    const pols = r.policies || [];
+    document.getElementById("freq-range-policies").textContent = pols.length
+      ? "当前实际频率：" + pols.map((p) => "policy" + p.policy + " " + (p.min_khz / 1000000).toFixed(2) + "-" + (p.max_khz / 1000000).toFixed(2) + "GHz").join("；")
+      : "当前实际频率：-";
+  } catch (e) { /* ignore */ }
+}
+
+document.getElementById("btnSaveFreqRange").addEventListener("click", async () => {
+  const fields = {
+    FREQ_RANGE_ENABLE: "f-rng-enable",
+    LITTLE_MIN: "f-rng-lmin",
+    LITTLE_MAX: "f-rng-lmax",
+    MID_MIN: "f-rng-mmin",
+    MID_MAX: "f-rng-mmax",
+    BIG_MIN: "f-rng-bmin",
+    BIG_MAX: "f-rng-bmax",
+  };
+  let okAll = true;
+  for (const [key, fid] of Object.entries(fields)) {
+    const v = document.getElementById(fid).value.trim();
+    if (!v) continue;
+    try {
+      const r = await tryApi("freq_range.sh", { action: "set", key, value: v });
+      if (!r.ok) { okAll = false; showToast(key + ": " + r.msg); break; }
+    } catch (e) { okAll = false; showToast("失败: " + e.message); break; }
+  }
+  if (okAll) {
+    const el = document.getElementById("freq-range-saved");
+    el.classList.remove("hidden");
+    setTimeout(() => el.classList.add("hidden"), 2000);
+    loadFreqRange();
+  }
+});
+
+document.getElementById("btnClearFreqRange").addEventListener("click", async () => {
+  try {
+    const r = await tryApi("freq_range.sh", { action: "clear" });
+    showToast(r.msg);
+    loadFreqRange();
+  } catch (e) { showToast("失败: " + e.message); }
+});
+
 async function loadGovWhitelist() {
   try {
     const r = await tryApi("idle_whitelist.sh", { action: "list" });
@@ -436,11 +503,12 @@ function showToast(msg) {
 
 /* ---------- 初始化 ---------- */
 document.getElementById("btnRefresh").addEventListener("click", () => {
-  refreshStatus(); loadApps(); loadWhitelist(); loadGovWhitelist(); loadDoze();
+  refreshStatus(); loadFreqRange(); loadApps(); loadWhitelist(); loadGovWhitelist(); loadDoze();
   loadAdvFile("mem", "adv-mem"); loadAdvFile("idle", "adv-idle");
   loadAdvFile("perapp", "adv-perapp"); loadAdvFile("uperf", "adv-uperf");
 });
 refreshStatus();
+loadFreqRange();
 loadApps();
 loadWhitelist();
 loadGovWhitelist();

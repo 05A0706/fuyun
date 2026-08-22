@@ -1,5 +1,37 @@
 # 更新日志
 
+## fuyun 26w34.6-b (20260822)
+
+### 新增 Vulkan 音量键切换
+- Magisk 模块 Action 中监听音量键：音量上 = 开启 Vulkan，音量下 = 还原 OpenGL
+- 状态持久化到 `/data/adb/uperf/vulkan.state`，开机由 `post-fs-data.sh` 按状态应用
+- 还原 OpenGL 时同时关闭 `ro.hwui.use_vulkan` / `debug.renderengine.vulkan` / `debug.renderengine.graphite` 等 Vulkan 属性
+
+### memctl 主动压入 zram + 清理
+- 新增 `ZRAM_RECLAIM` / `ZRAM_RECLAIM_SIZE` / `ZRAM_IDLE_MIN` 配置
+- 对空闲后台进程尝试 cgroup v2 anon 回收，把匿名内存换出到 zram，进程保活
+- 沿用 `last_used` 判定空闲，避免频繁压制
+- 杀进程后可选触发 `pm trim-caches` 清理系统缓存（`CLEAN_CACHE_AFTER_KILL` / `TRIM_CACHE_SIZE`）
+
+
+### 新增 CPU 频率范围（小/中/大核 min/max 可调）
+- WebUI 新增「CPU 频率范围」独立界面：分别设置小核 / 中核 / 大核的频率下限与上限，0=动态，min=max=锁频
+- 内置 8+ Gen1 / 8 Gen2 支持频点表，下拉框只显示当前 SoC 合法频点，非法值自动拒绝并记录日志
+- 扩展 `freq_limit.sh` 为统一频率控制服务：全局上限与分簇 min/max 共用一套 bind-mount 掩码，避免互相覆盖
+- 自动识别 policy 属于小核/中核/大核，按簇应用 `scaling_min_freq` / `scaling_max_freq`
+- 配置：`/sdcard/Android/yc/uperf/freq_range.txt`
+
+### 新增第三方插件接口
+- 插件目录：`/sdcard/Android/yc/uperf/plugins/`，放置 `.sh` 插件即可
+- 调用阶段：`apply`（频率控制应用后）、`clear`（清除后）、`boot`（开机服务就绪后）
+- 环境变量：`FUYUN_STAGE` / `FUYUN_SOC` / `FUYUN_MODULE_DIR` / `FUYUN_USER_PATH` / `FUYUN_PLUGIN_DIR`
+- 插件输出记录到 `plugin.log`，插件失败不影响模块主功能
+
+### 插件支持 JSON 导入
+- `plugins/` 目录除了 `.sh`，现在支持 `.json` 描述插件
+- JSON 支持 `name` / `enabled` / `stages` / `command` / `file` 字段
+- 直接把 JSON 文件放进 `plugins/` 即自动导入生效
+
 ## fuyun 26w34.5-b (20260821)
 
 ### 新增频率限制（CPU 最高频率上限）
@@ -23,7 +55,7 @@
 
 ## fuyun 26w34.4-b (20260820)
 
-###新增中文名：**浮云（fuyun）**。优化 sdm8+ 和 sdm8g2 在各模式的核心分配，并新增 WebUI 高级设置与 Doze 白名单管理。
+### 新增中文名：**浮云（fuyun）**。优化 sdm8+ 和 sdm8g2 在各模式的核心分配，并新增 WebUI 高级设置与 Doze 白名单管理。
 
 ### WebUI
 - 新增「高级设置」：可直接编辑 `uperf.json`、`mem_config.txt`、`idle_gov.txt`、`perapp_powermode.txt`，保存前自动备份 `.bak`
@@ -110,7 +142,7 @@
 - 打包格式修复：bsdtar 的 `./` 前缀、.NET 的反斜杠条目名均会导致 unzip 匹配失败 → 标准打包
 - 文档补全：README（含 WebUI 章节）/ CHANGELOG / 8+ 调优指南
 
-## Baikal R2P1 (原版)
+## Baikal R2P1 
 - 适配 8 Gen2
 - 更可靠的 Vulkan 开启方式
 - 5G-SA 策略优化

@@ -1,0 +1,65 @@
+# ============================================================
+# fuyun 内存优化配置 (安装时复制到 /sdcard/Android/yc/uperf/)
+# 可随时编辑, 重启保留; 修改后最多一个轮询周期即生效, 无需重启
+#
+# 配套文件:
+#   mem_apps.txt    - 分应用回收策略 (包名 模式: soft/hard/kill/off)
+#   mem_whitelist.txt - 回收白名单 (支持 com.xxx.* 前缀通配)
+#   mem_log.txt     - 回收日志 (含每次释放的内存统计)
+# ============================================================
+
+# 总开关: 1=启用 0=停用
+MEM_ENABLE=1
+
+# 回收模式:
+#   soft   = 仅通知应用释放缓存 (最温和, 兼容性最好)
+#   hard   = soft + 内核级回收进程内存 (推荐)
+#   kill   = 直接终止后台进程 (任务栈保留, Android 12+ 效果最佳)
+# 注意: 无论哪种模式, 后台应用的"杀进程"都由下方的 IDLE_KILL_MIN 独立控制
+MODE=hard
+
+# 回收轮询间隔 (秒) —— 调大更省电
+INTERVAL=300
+
+# 内存压力阈值 (0-100): /proc/pressure/memory 的 full avg10 达到该值才回收
+# 调低 = 更积极回收; 调高 = 更保守 (功耗敏感建议 30-50)
+PSI_THRESHOLD=30
+
+# hard 模式单进程最多回收量 (内核 memory.reclaim 上限)
+HARD_RECLAIM=32M
+
+# 每轮最多回收的进程数 (防止一次性回收过多导致卡顿)
+MAX_PER_ROUND=10
+
+# 空闲淘汰 (分钟): 后台应用闲置超过该时长才被杀进程 (am kill, 保留任务栈)
+# 只杀: 非前台 + 闲置超时 + 非系统应用 + 非白名单 + 非 per-app off
+# 设 0 = 完全关闭杀进程功能
+IDLE_KILL_MIN=5
+
+# 切换触发回收: 1=启用 0=关闭
+# 前台应用切换时, 对切走的应用立即回收内存 (trim + 内核 reclaim, 不杀进程)
+# 事件驱动, 每次切应用仅触发一次, 几乎无功耗代价
+SWITCH_RECLAIM=1
+
+# 推送应用包名 (| 分隔): 闲置超时后只保留含 KEEP_CMDLINE 关键词的进程, 其余清理
+# 默认微信/QQ/TIM, 等同原"微信QQ优化"功能, 现支持任意应用
+PUSH_KEEP=com.tencent.mm|com.tencent.mobileqq|com.tencent.tim
+
+# 推送应用需保留的进程特征 (cmdline 关键词, | 分隔)
+KEEP_CMDLINE=push|daemon|msf
+
+# 主动压入 zram: 1=启用 0=关闭
+# 对空闲后台进程尝试把匿名内存换出到 zram, 进程保活, 冷启动更快
+ZRAM_RECLAIM=1
+
+# 单进程每次尝试压入 zram 的内存量 (cgroup v2 memory.reclaim anon 回收)
+ZRAM_RECLAIM_SIZE=64M
+
+# 后台进程闲置多少分钟后开始压入 zram (沿用 last_used 判定)
+ZRAM_IDLE_MIN=5
+
+# 杀进程后是否触发系统缓存清理 (pm trim-caches)
+CLEAN_CACHE_AFTER_KILL=1
+
+# 系统缓存清理大小 (传给 pm trim-caches)
+TRIM_CACHE_SIZE=512M

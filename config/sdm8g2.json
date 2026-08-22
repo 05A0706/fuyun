@@ -1,0 +1,1304 @@
+{
+  "meta": {
+    "name": "fuyun",
+    "author": "05A0706"
+  },
+  "modules": {
+    "switcher": {
+      "switchInode": "/sdcard/Android/yc/uperf/cur_powermode.txt",
+      "perapp": "/sdcard/Android/yc/uperf/perapp_powermode.txt",
+      "hintDuration": {
+        "idle": 0,
+        "touch": 4,
+        "trigger": 0.03,
+        "gesture": 0.1,
+        "switch": 0.5,
+        "junk": 0.08
+      }
+    },
+    "atrace": {
+      "enable": false
+    },
+    "log": {
+      "level": "info"
+    },
+    "input": {
+      "enable": true,
+      "swipeThd": 0.03,
+      "gestureThdX": 0.03,
+      "gestureThdY": 0.03,
+      "gestureDelayTime": 2,
+      "holdEnterTime": 1
+    },
+    "sfanalysis": {
+      "enable": true,
+      "renderIdleSlackTime": 0.2
+    },
+    "cpu": {
+      "enable": true,
+      "powerModel": [
+        {
+          "efficiency": 100,
+          "nr": 3,
+          "typicalPower": 0.55,
+          "typicalFreq": 1.4,
+          "sweetFreq": 1.1,
+          "plainFreq": 0.5,
+          "freeFreq": 0.3
+        },
+        {
+          "efficiency": 260,
+          "nr": 2,
+          "typicalPower": 0.67,
+          "typicalFreq": 1.8,
+          "sweetFreq": 1.4,
+          "plainFreq": 0.8,
+          "freeFreq": 0.4
+        },
+        {
+          "efficiency": 220,
+          "nr": 2,
+          "typicalPower": 0.79,
+          "typicalFreq": 2,
+          "sweetFreq": 1.6,
+          "plainFreq": 0.8,
+          "freeFreq": 0.4
+        },
+        {
+          "efficiency": 420,
+          "nr": 1,
+          "typicalPower": 2.18,
+          "typicalFreq": 2.2,
+          "sweetFreq": 1.8,
+          "plainFreq": 1.1,
+          "freeFreq": 0.5
+        }
+      ]
+    },
+    "sysfs": {
+      "enable": true,
+      "knob": {
+        "idle_timer": "/sys/class/kgsl/kgsl-3d0/idle_timer",
+        "bus_on": "/sys/class/kgsl/kgsl-3d0/force_bus_on",
+        "rail_on": "/sys/class/kgsl/kgsl-3d0/force_rail_on",
+        "GpuGovernor": "/sys/class/kgsl/kgsl-3d0/devfreq/governor",
+        "cpusetTa": "/dev/cpuset/top-app/cpus",
+        "cpusetFg": "/dev/cpuset/foreground/cpus",
+        "cpusetBg": "/dev/cpuset/background/cpus",
+        "cpusetSysBg": "/dev/cpuset/system-background/cpus",
+        "cpusetRe": "/dev/cpuset/restricted/cpus"
+      }
+    },
+    "sched": {
+      "enable": true,
+      "cpumask": {
+        "all": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "c0": [
+          0
+        ],
+        "c1": [
+          1
+        ],
+        "c2": [
+          2
+        ],
+        "c3": [
+          3
+        ],
+        "c4": [
+          4
+        ],
+        "c5": [
+          5
+        ],
+        "c6": [
+          6
+        ],
+        "c7": [
+          7
+        ]
+      },
+      "affinity": {
+        "core1": {
+          "fg": "c1",
+          "bg": "c1",
+          "idle": "c1",
+          "touch": "c1",
+          "boost": "c1"
+        },
+        "core7": {
+          "fg": "c7",
+          "bg": "c7",
+          "idle": "c7",
+          "touch": "c7",
+          "boost": "c7"
+        },
+        "core6": {
+          "fg": "c6",
+          "bg": "c6",
+          "idle": "c6",
+          "touch": "c6",
+          "boost": "c6"
+        },
+        "core0-2": {
+          "fg": "c0,c1,c2",
+          "bg": "c0,c1,c2",
+          "idle": "c0,c1,c2",
+          "touch": "c0,c1,c2",
+          "boost": "c0,c1,c2"
+        },
+        "core6-7": {
+          "fg": "c6,c7",
+          "bg": "c6,c7",
+          "idle": "c6,c7",
+          "touch": "c6,c7",
+          "boost": "c6,c7"
+        },
+        "core4-5": {
+          "fg": "c4,c5",
+          "bg": "c4,c5",
+          "idle": "c4,c5",
+          "touch": "c4,c5",
+          "boost": "c4,c5"
+        },
+        "core5-6": {
+          "fg": "c5,c6",
+          "bg": "c5,c6",
+          "idle": "c5,c6",
+          "touch": "c5,c6",
+          "boost": "c5,c6"
+        },
+        "core5": {
+          "fg": "c5",
+          "bg": "c5",
+          "idle": "c5",
+          "touch": "c5",
+          "boost": "c5"
+        },
+        "core0-1": {
+          "fg": "c0,c1",
+          "bg": "c0,c1",
+          "idle": "c0,c1",
+          "touch": "c0,c1",
+          "boost": "c0,c1"
+        },
+        "core0-5": {
+          "fg": "c0,c1,c2,c3,c4,c5",
+          "bg": "c0,c1,c2,c3,c4,c5",
+          "idle": "c0,c1,c2,c3,c4,c5",
+          "touch": "c0,c1,c2,c3,c4,c5",
+          "boost": "c0,c1,c2,c3,c4,c5"
+        },
+        "core0-4": {
+          "fg": "c0,c1,c2,c3,c4",
+          "bg": "c0,c1,c2,c3,c4",
+          "idle": "c0,c1,c2,c3,c4",
+          "touch": "c0,c1,c2,c3,c4",
+          "boost": "c0,c1,c2,c3,c4"
+        },
+        "core4-6": {
+          "fg": "c4,c5,c6",
+          "bg": "c4,c5,c6",
+          "idle": "c4,c5,c6",
+          "touch": "c4,c5,c6",
+          "boost": "c4,c5,c6"
+        },
+        "core2-3": {
+          "fg": "c2,c3",
+          "bg": "c2,c3",
+          "idle": "c2,c3",
+          "touch": "c2,c3",
+          "boost": "c2,c3"
+        },
+        "core0-3": {
+          "fg": "c0,c1,c2,c3",
+          "bg": "c0,c1,c2,c3",
+          "idle": "c0,c1,c2,c3",
+          "touch": "c0,c1,c2,c3",
+          "boost": "c0,c1,c2,c3"
+        },
+        "core3-4": {
+          "fg": "c3,c4",
+          "bg": "c3,c4",
+          "idle": "c3,c4",
+          "touch": "c3,c4",
+          "boost": "c3,c4"
+        },
+        "auto": {
+          "bg": "",
+          "fg": "",
+          "idle": "",
+          "touch": "",
+          "boost": ""
+        },
+        "norm": {
+          "bg": "",
+          "fg": "all",
+          "idle": "all",
+          "touch": "all",
+          "boost": "all"
+        },
+        "bg": {
+          "bg": "",
+          "fg": "c0,c1,c2",
+          "idle": "c0,c1,c2",
+          "touch": "c0,c1,c2",
+          "boost": "c0,c1,c2"
+        },
+        "ui": {
+          "bg": "",
+          "fg": "all",
+          "idle": "all",
+          "touch": "c3,c4,c5,c6",
+          "boost": "all"
+        },
+        "crit": {
+          "bg": "",
+          "fg": "all",
+          "idle": "all",
+          "touch": "c3,c4,c5,c6",
+          "boost": "c3,c4,c5,c6"
+        },
+        "gtcoop": {
+          "bg": "",
+          "fg": "all",
+          "idle": "all",
+          "touch": "c3,c4,c5,c6",
+          "boost": "all"
+        },
+        "gtmain": {
+          "bg": "",
+          "fg": "all",
+          "idle": "all",
+          "touch": "c7",
+          "boost": "all"
+        }
+      },
+      "prio": {
+        "auto": {
+          "bg": 0,
+          "fg": 0,
+          "idle": 0,
+          "touch": 0,
+          "boost": 0
+        },
+        "bg": {
+          "bg": -3,
+          "fg": 139,
+          "idle": 139,
+          "touch": 139,
+          "boost": 139
+        },
+        "norm": {
+          "bg": -1,
+          "fg": -1,
+          "idle": 120,
+          "touch": 120,
+          "boost": 130
+        },
+        "coop": {
+          "bg": -3,
+          "fg": 124,
+          "idle": 122,
+          "touch": 122,
+          "boost": 130
+        },
+        "ui": {
+          "bg": -3,
+          "fg": 120,
+          "idle": 110,
+          "touch": 98,
+          "boost": 116
+        },
+        "rtusr": {
+          "bg": 98,
+          "fg": 98,
+          "idle": 97,
+          "touch": 97,
+          "boost": 98
+        },
+        "rtsys": {
+          "bg": 97,
+          "fg": 97,
+          "idle": 96,
+          "touch": 96,
+          "boost": 97
+        }
+      },
+      "rules": [
+        {
+          "name": "Launcher",
+          "regex": "/HOME_PACKAGE/",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "crit",
+              "pc": "rtusr"
+            },
+            {
+              "k": "^(RenderThread|GLThread)",
+              "ac": "crit",
+              "pc": "rtusr"
+            },
+            {
+              "k": "^(GPU completion|HWC release|hwui|FramePolicy|ScrollPolicy|ged-swd)",
+              "ac": "bg",
+              "pc": "rtusr"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "Bilibili Optimized",
+          "regex": "tv.danmaku.bili|com.bilibili.app.in",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-5",
+              "pc": "ui",
+              "comment": "主线程确保流畅交互"
+            },
+            {
+              "k": "^(RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 800,
+                "freq_boost": "+25%"
+              },
+              "comment": "弹幕渲染优化"
+            },
+            {
+              "k": "^(DecoderThread|FFmpegDecoder)",
+              "ac": "core0-4",
+              "pc": "norm",
+              "avx_opt": true,
+              "cpu_quota": "50%",
+              "comment": "视频解码线程"
+            },
+            {
+              "k": "AudioTrack|BiliAudioPlayer",
+              "ac": "core4-5",
+              "pc": "norm",
+              "sched_policy": "fifo",
+              "buffer_size": "1536",
+              "comment": "音频防卡顿"
+            },
+            {
+              "k": "^(DanmakuLoader|CommentFetcher)",
+              "ac": "core0-3",
+              "pc": "bg",
+              "cpu_quota": "30%",
+              "comment": "弹幕加载限流"
+            },
+            {
+              "k": "NetworkThread|OkHttp",
+              "ac": "core0-3",
+              "pc": "bg",
+              "cpu_quota": "40%",
+              "comment": "网络线程限流"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "SurfaceFlinger",
+          "regex": "/system/bin/surfaceflinger",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "crit",
+              "pc": "auto"
+            },
+            {
+              "k": "^(app|RenderEngine)",
+              "ac": "crit",
+              "pc": "auto"
+            },
+            {
+              "k": "^Binder:",
+              "ac": "auto",
+              "pc": "auto"
+            },
+            {
+              "k": ".",
+              "ac": "bg",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "SystemServer",
+          "regex": "system_server",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "^(TaskSnapshot|Greezer|CachedApp|SystemPressure|SensorService)|[Mm]emory",
+              "ac": "bg",
+              "pc": "auto"
+            },
+            {
+              "k": "^Async",
+              "ac": "auto",
+              "pc": "norm"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "SystemUI",
+          "regex": "com.android.systemui",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "^(Jit thread pool|HeapTaskDaemon|FinalizerDaemon|ReferenceQueueD)",
+              "ac": "bg",
+              "pc": "auto"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "MediaProvider",
+          "regex": "^com.android.providers.media",
+          "pinned": true,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "bg"
+            }
+          ]
+        },
+        {
+          "name": "Memory reclaim",
+          "regex": "swapd|compactd",
+          "pinned": true,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "bg"
+            }
+          ]
+        },
+        {
+          "name": "Phone",
+          "regex": "com.android.phone",
+          "pinned": false,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "Other system processes",
+          "regex": "^(/system|/vendor|magiskd|zygiskd)|@|-service$",
+          "pinned": false,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "App co-process",
+          "regex": "[.].+:",
+          "pinned": false,
+          "rules": [
+            {
+              "k": "^(Jit thread pool|HeapTaskDaemon|FinalizerDaemon|ReferenceQueueD)",
+              "ac": "bg",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "Background Limiter+",
+          "regex": "^com\\.tencent\\.mm:tools$|^com\\.aliyun\\.doc$|(:|\\.)(pushservice|daemon|service|sync|update|download|analytics)$",
+          "pinned": true,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "core0-1",
+              "pc": "bg",
+              "cpu_quota": "25%",
+              "sched_policy": "batch"
+            }
+          ]
+        },
+        {
+          "name": "推送服务限制",
+          "regex": "com.xiaomi.xmsf|com.huawei.android.pushagent|com.coloros.mcssdk|com.vivo.push|com.google.android.gms.persistent",
+          "pinned": true,
+          "rules": [
+            {
+              "k": ".",
+              "ac": "core0-1",
+              "pc": "bg",
+              "cpu_quota": "20%"
+            }
+          ]
+        },
+        {
+          "name": "Dynamic Response",
+          "regex": "/LAUNCHER_PACKAGE/|com.android.systemui",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "InputDispatcher",
+              "ac": "core0-5",
+              "pc": "bg",
+              "dynamic_boost": {
+                "duration": 900,
+                "freq_boost": "+35%"
+              }
+            }
+          ]
+        },
+        {
+          "name": "社交媒体应用优化",
+          "regex": "^com.whatsapp|^com.facebook.katana|^com.instagram.android|^com.twitter.android|^com.snapchat.android|^com.tencent.mm|^com.tencent.mobileqq",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(RenderThread|GLThread)",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(ImageLoader|ImageFetcher|NetworkThread|DownloadThread)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "40%"
+            },
+            {
+              "k": "^(OkHttp|AsyncTask|ThreadPoolExecutor|DispatchThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(MessageSync|PushService|NotificationService)",
+              "ac": "core0-1",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "浏览器应用优化",
+          "regex": "^com.android.chrome|^com.brave.browser|^org.mozilla.firefox|^com.opera.browser|^com.microsoft.emmx|^com.UCMobile|^com.uc.browser.en",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Chrome_InProc|CrRendererMain|CrGpuMain|CompositorTile)",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(NetworkService|IOThread|MemoryInfra|ThreadPool)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "35%"
+            },
+            {
+              "k": "^(CacheThread|DiskCache|HistoryThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(TabManager|JavaBridge|V8|JsEngine)",
+              "ac": "core0-3",
+              "pc": "bg"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "电子邮件应用优化",
+          "regex": "^com.google.android.gm|^com.microsoft.office.outlook|^com.samsung.android.email.provider",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(RenderThread|GLThread)",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(SyncThread|MailboxObserver|AttachmentLoader)",
+              "ac": "core0-3",
+              "pc": "bg"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "地图应用优化",
+          "regex": "^com.google.android.apps.maps|^com.autonavi.minimap|^com.baidu.BaiduMap",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui"
+            },
+            {
+              "k": "^(RenderThread|GLThread|MapRenderThread)",
+              "ac": "core4-6",
+              "pc": "ui"
+            },
+            {
+              "k": "^(LocationThread|NavigationService|RouteCalculation)",
+              "ac": "core4-5",
+              "pc": "norm"
+            },
+            {
+              "k": "^(TileLoader|CacheManager|DownloadManager)",
+              "ac": "core0-3",
+              "pc": "bg"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_moba",
+          "regex": "com.tencent.tmgp.sgame|com.tencent.lolm|com.tencent.lolmchess|com.tencent.tmgp.hyrz|com.tencent.honorofkings|com.riotgames.league.wildrift",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioTrack|AudioThread|DecoderThread|OkHttp|NetworkThread|Xqa|Bugly|xlog_)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_mihoyo",
+          "regex": "com.miHoYo.Yuanshen|com.miHoYo.GenshinImpact|com.miHoYo.hkrpg|com.miHoYo.hkrpgoverseas|com.miHoYo.nap|com.miHoYo.ZenlessZoneZero|com.miHoYo.bh3|com.miHoYo.bh3global",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "^(RenderThread|GameThread|VulkanRenderThread)",
+              "ac": "core7",
+              "pc": "gtmain",
+              "vulkan_opt": true,
+              "dynamic_boost": {
+                "duration": 1200,
+                "freq_boost": "+30%"
+              }
+            },
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui"
+            },
+            {
+              "k": "^UnityMain",
+              "ac": "core6-7",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioTrack|AudioThread|DecoderThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_netease",
+          "regex": "com.netease.egg|com.netease.identity|com.netease.sky|com.thatgamecompany.sky|com.netease.raiders|com.netease.naraka|com.netease.yjwj|com.netease.onmyoji|com.netease.mhxy",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_fps",
+          "regex": "com.tencent.tmgp.cf|com.tencent.tmgp.codm|com.tencent.arena|com.activision.callofduty.shooter",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 800,
+                "freq_boost": "+25%"
+              }
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_ue",
+          "regex": "com.tencent.tmgp.pubgmhd|com.tencent.tmgp.pubgmhdf|com.tencent.ig|com.perfectworld.toweroffantasy|com.tencent.dfg",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(GameThread|RenderThread|RHIThread)",
+              "ac": "core7",
+              "pc": "gtmain",
+              "dynamic_boost": {
+                "duration": 1000,
+                "freq_boost": "+30%"
+              }
+            },
+            {
+              "k": "^(WorkerThread|TaskGraph|StatsThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioThread|DecoderThread|NetworkThread|OkHttp)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_light",
+          "regex": "com.hypergryph.arknights|com.aligames.sgz",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-5",
+              "pc": "ui"
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GLThread)",
+              "ac": "core4-6",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|NativeThread|NetworkThread|OkHttp)",
+              "ac": "core0-2",
+              "pc": "bg",
+              "cpu_quota": "30%"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "games_racing",
+          "regex": "com.tencent.tmgp.speed|com.tencent.ymzx",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioTrack|AudioThread|DecoderThread)",
+              "ac": "core0-2",
+              "pc": "bg"
+            },
+            {
+              "k": ".",
+              "ac": "auto",
+              "pc": "auto"
+            }
+          ]
+        },
+        {
+          "name": "Default rule",
+          "regex": ".",
+          "pinned": false,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "ui",
+              "pc": "ui"
+            },
+            {
+              "k": "^(UnityMain|RenderThread |GameThread)",
+              "ac": "gtmain",
+              "pc": "auto"
+            },
+            {
+              "k": "^(Unity|Worker Thread|TaskGraph|RHIThread|GLThread|Thread-|Job.Worker)",
+              "ac": "gtcoop",
+              "pc": "auto"
+            },
+            {
+              "k": "^(RenderThread|JNISurfaceText|IJK_External_Re)|[Aa]nim|([.]raster|[.]ui)$",
+              "ac": "ui",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Chrome_InProc|CrRendererMain|CrGpuMain|CompositorTile)",
+              "ac": "norm",
+              "pc": "auto"
+            },
+            {
+              "k": "^(Viz|Chrome_|Compositor)|[Vv]sync|mali-",
+              "ac": "ui",
+              "pc": "ui"
+            },
+            {
+              "k": "^(OkHttp|Ysa|Xqa|Rx|APM|TVKDL-|tp-|cgi-|ODCP-|Bugly|xlog_)",
+              "ac": "bg",
+              "pc": "auto"
+            },
+            {
+              "k": "^(xg_vip_service|Profile|SearchDaemon|default_matrix|FrameDecoder|FrameSeq)",
+              "ac": "bg",
+              "pc": "auto"
+            },
+            {
+              "k": "^(GPU completion|HWC release|hwui|FramePolicy|ScrollPolicy|ged-swd)",
+              "ac": "bg",
+              "pc": "rtusr"
+            },
+            {
+              "k": "^(JS|libweexjsb|WeexJsBridge|mqt_native|mqt_js|JavaScriptTh)",
+              "ac": "norm",
+              "pc": "coop"
+            },
+            {
+              "k": "^(pool-|glide-|launcher-|Fresco)|[Dd]ownload|[Ss]chedule|[Ww]ork|[Pp]ool|[Dd]efau",
+              "ac": "norm",
+              "pc": "coop"
+            },
+            {
+              "k": ".",
+              "ac": "norm",
+              "pc": "auto"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "initials": {
+    "cpu": {
+      "baseSampleTime": 0.01,
+      "baseSlackTime": 0.01,
+      "latencyTime": 0.5,
+      "slowLimitPower": 3,
+      "fastLimitPower": 6,
+      "fastLimitCapacity": 10,
+      "fastLimitRecoverScale": 0.3,
+      "predictThd": 0.3,
+      "margin": 0.25,
+      "burst": 0,
+      "guideCap": true,
+      "limitEfficiency": true
+    },
+    "sysfs": {
+      "idle_timer": "80",
+      "bus_on": "0",
+      "rail_on": "0",
+      "GpuGovernor": "msm-adreno-tz",
+      "cpusetTa": "0-7",
+      "cpusetFg": "0-7",
+      "cpusetBg": "0-2",
+      "cpusetSysBg": "0-2",
+      "cpusetRe": "0-6"
+    },
+    "sched": {
+      "scene": "idle"
+    }
+  },
+  "presets": {
+    "balance": {
+      "*": {
+        "cpu.latencyTime": 0.8,
+        "cpu.slowLimitPower": 2.5,
+        "cpu.fastLimitPower": 4,
+        "cpu.fastLimitCapacity": 16,
+        "cpu.margin": 0.2,
+        "sysfs.cpusetTa": "0-6",
+        "sysfs.cpusetFg": "0-6",
+        "sysfs.cpusetBg": "0-2",
+        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetRe": "0-6"
+      },
+      "idle": {
+        "cpu.baseSampleTime": 0.04,
+        "cpu.baseSlackTime": 0.07,
+        "cpu.predictThd": 0.3,
+        "cpu.limitEfficiency": true,
+        "sched.scene": "idle"
+      },
+      "touch": {
+        "cpu.baseSampleTime": 0.01,
+        "sched.scene": "touch"
+      },
+      "trigger": {
+        "cpu.latencyTime": 0,
+        "cpu.burst": 0.5,
+        "sched.scene": "touch"
+      },
+      "gesture": {
+        "cpu.burst": 0.2,
+        "sched.scene": "touch"
+      },
+      "junk": {
+        "cpu.burst": 0.2,
+        "sched.scene": "touch"
+      },
+      "switch": {
+        "cpu.latencyTime": 0,
+        "cpu.slowLimitPower": 2.5,
+        "cpu.fastLimitPower": 3.5,
+        "cpu.fastLimitRecoverScale": 0.1,
+        "cpu.margin": 0.2,
+        "cpu.burst": 0.2,
+        "sched.scene": "boost"
+      }
+    },
+    "powersave": {
+      "*": {
+        "sysfs.idle_timer": "20",
+        "cpu.latencyTime": 0.5,
+        "cpu.slowLimitPower": 1.1,
+        "cpu.fastLimitPower": 0.8,
+        "cpu.fastLimitCapacity": 4,
+        "cpu.margin": 0.05,
+        "sysfs.cpusetTa": "0-5",
+        "sysfs.cpusetFg": "0-5",
+        "sysfs.cpusetBg": "0-2",
+        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetRe": "0-2"
+      },
+      "idle": {
+        "cpu.baseSampleTime": 0.06,
+        "cpu.baseSlackTime": 0.15,
+        "cpu.predictThd": 1,
+        "cpu.burst": 0,
+        "cpu.limitEfficiency": true,
+        "sched.scene": "idle"
+      },
+      "touch": {
+        "cpu.baseSampleTime": 0.04,
+        "cpu.baseSlackTime": 0.08,
+        "cpu.margin": 0.25,
+        "cpu.burst": 0.15,
+        "cpu.predictThd": 0.8,
+        "sched.scene": "touch"
+      },
+      "trigger": {
+        "cpu.baseSampleTime": 0.04,
+        "cpu.baseSlackTime": 0.08,
+        "cpu.margin": 0.3,
+        "cpu.burst": 0.2,
+        "cpu.predictThd": 0.7,
+        "sched.scene": "touch"
+      },
+      "gesture": {
+        "cpu.baseSampleTime": 0.04,
+        "cpu.baseSlackTime": 0.08,
+        "cpu.margin": 0.3,
+        "cpu.burst": 0.2,
+        "cpu.predictThd": 0.7,
+        "sched.scene": "touch"
+      },
+      "junk": {
+        "cpu.margin": 0.1,
+        "sched.scene": "background"
+      },
+      "switch": {
+        "cpu.latencyTime": 0,
+        "cpu.slowLimitPower": 0.5,
+        "cpu.fastLimitPower": 0.5,
+        "cpu.fastLimitRecoverScale": 0.1,
+        "cpu.margin": 0.1,
+        "sched.scene": "boost"
+      }
+    },
+    "performance": {
+      "*": {
+        "sysfs.idle_timer": "80",
+        "sysfs.bus_on": "0",
+        "sysfs.rail_on": "0",
+        "sysfs.GpuGovernor": "msm-adreno-tz",
+        "cpu.latencyTime": 0.2,
+        "cpu.slowLimitPower": 4,
+        "cpu.fastLimitPower": 8,
+        "sysfs.cpusetTa": "0-7",
+        "sysfs.cpusetFg": "0-7",
+        "sysfs.cpusetBg": "0-2",
+        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetRe": "0-7"
+      },
+      "idle": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0.02,
+        "cpu.margin": 0.25,
+        "cpu.burst": 0.2,
+        "cpu.predictThd": 0.5,
+        "sched.scene": "idle"
+      },
+      "touch": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0.01,
+        "cpu.margin": 0.6,
+        "cpu.burst": 0.6,
+        "cpu.predictThd": 0.4,
+        "sched.scene": "touch"
+      },
+      "trigger": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0.01,
+        "cpu.margin": 0.7,
+        "cpu.burst": 0.7,
+        "cpu.predictThd": 0.3,
+        "sched.scene": "touch"
+      },
+      "gesture": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0.01,
+        "cpu.margin": 0.8,
+        "cpu.burst": 0.8,
+        "cpu.predictThd": 0.2,
+        "sched.scene": "touch"
+      },
+      "junk": {
+        "cpu.baseSampleTime": 0.05,
+        "cpu.baseSlackTime": 0.15,
+        "cpu.margin": 0.9,
+        "cpu.burst": 0.9,
+        "cpu.predictThd": 0.15,
+        "sched.scene": "touch"
+      },
+      "switch": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0,
+        "cpu.margin": 1,
+        "cpu.burst": 1,
+        "cpu.predictThd": 0.1,
+        "sched.scene": "boost"
+      }
+    },
+    "fast": {
+      "*": {
+        "sysfs.idle_timer": "800",
+        "sysfs.bus_on": "0",
+        "sysfs.rail_on": "0",
+        "sysfs.GpuGovernor": "msm-adreno-tz",
+        "cpu.latencyTime": 0,
+        "cpu.slowLimitPower": 999,
+        "cpu.fastLimitPower": 999,
+        "cpu.fastLimitCapacity": 999,
+        "cpu.margin": 0.65,
+        "sysfs.cpusetTa": "0-7",
+        "sysfs.cpusetFg": "0-7",
+        "sysfs.cpusetBg": "0-2",
+        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetRe": "0-7"
+      },
+      "idle": {
+        "cpu.baseSampleTime": 0.01,
+        "cpu.baseSlackTime": 0.04,
+        "sched.scene": "idle"
+      },
+      "touch": {
+        "sched.scene": "touch"
+      },
+      "trigger": {
+        "cpu.margin": 0.8,
+        "sched.scene": "boost"
+      },
+      "gesture": {
+        "cpu.margin": 0.8,
+        "sched.scene": "touch"
+      },
+      "junk": {
+        "cpu.burst": 0.5,
+        "sched.scene": "touch"
+      },
+      "switch": {
+        "cpu.burst": 0.2,
+        "sched.scene": "boost"
+      }
+    }
+  }
+}

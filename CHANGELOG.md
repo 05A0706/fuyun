@@ -1,5 +1,18 @@
 # 更新日志
 
+## fuyun 26w34.7-b (202608222) 修复补丁
+
+### 修复: action.sh 音量键失效
+- 按键解析不再依赖 getevent 输出字段位置（原写法在带/不带时间戳的输出格式下都取不到 KEY_VOLUMEUP/DOWN，导致永远显示"未检测到按键"）
+- 只认 DOWN 按下事件，过滤抬手 UP；无 resetprop 时自动退回 setprop，getevent 缺失时优雅跳过
+- 安装流程补齐 action.sh 的可执行权限（zip 内权限为 0666，Magisk 直接执行 action.sh 会 Permission denied）
+
+### 修复: WebUI 无法使用
+- **zip 权限修复**：所有脚本/二进制重新打包为 0755（原包内全是 0666，httpd 执行 CGI 需要 +x，缺失时全部 API 返回 403）
+- **customize.sh 兼容 Magisk**：Magisk v23+ 存在 customize.sh 时优先于 update-binary 执行，原脚本对 Magisk 直接 exit 0 导致 setup.sh 未运行（配置未复制、权限未设置）；现在 KSU/Magisk 统一走 setup.sh
+- **webuid.sh 加固**：端口检测改为读 /proc/net/tcp（不依赖 nc）；HTTP 自检兼容 wget/curl 缺失的设备；启动时自愈 CGI 执行权限；支持 httpd 前台/daemon 两种模式并可按命令行特征停止；启动失败自动回退不带 -f 重试
+- **日志 API JSON 修复**：log.sh 在管道子 shell 中维护逗号标志导致多行日志输出非法 JSON，改为临时文件 + 重定向
+
 ## fuyun 26w34.7-b (202608222)
 
 ### 新增平台支持: 骁龙 8 Gen3 / 8 Elite / 8 Elite Gen5 (8e5)

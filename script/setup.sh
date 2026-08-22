@@ -107,19 +107,20 @@ choose_screen_saver() {
     # (直接轮询时间戳会因 getevent 阻塞而永远轮不到; getevent 失败也会走超时兜底)
     tmpf="${TMPDIR:-/data/local/tmp}/fuyun_key.txt"
     rm -f "$tmpf"
-    getevent -qlc 1 >"$tmpf" 2>/dev/null &
-    gpid=$!
-    waited=0
-    while kill -0 "$gpid" 2>/dev/null && [ "$waited" -lt 10 ]; do
-        sleep 1
-        waited=$((waited + 1))
-    done
-    if kill -0 "$gpid" 2>/dev/null; then
+    if command -v getevent >/dev/null 2>&1; then
+        getevent -qlc 8 >"$tmpf" 2>/dev/null &
+        gpid=$!
+        waited=0
+        while [ "$waited" -lt 20 ]; do
+            # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止把刚按过音量上的抬起误当选择
+            grep -qE 'KEY_VOLUME(UP|DOWN).*DOWN' "$tmpf" 2>/dev/null && break
+            kill -0 "$gpid" 2>/dev/null || break
+            sleep 0.5
+            waited=$((waited + 1))
+        done
         kill "$gpid" 2>/dev/null
-        choice=""
-    else
-        # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止把刚按过音量上的抬起误当选择
-        choice=$(awk '{ print $3, $4 }' "$tmpf" | grep 'KEY_' | awk '$2 == "DOWN" || $2 == "" { print $1 }')
+        # 不依赖字段位置, 兼容带/不带时间戳、toybox/AOSP getevent 输出格式
+        choice=$(awk '/KEY_VOLUMEDOWN/ && /DOWN/ { print "KEY_VOLUMEDOWN"; exit } /KEY_VOLUMEUP/ && /DOWN/ { print "KEY_VOLUMEUP"; exit }' "$tmpf" 2>/dev/null)
     fi
     rm -f "$tmpf"
     case "$choice" in
@@ -192,9 +193,10 @@ else
     echo "这是一个beta更新 稳定性未知，请谨慎安装"
     echo "按音量上继续 音量下退出"
     choice=
-    while [ $choice =  ]; do
-           choice=$(getevent -qlc 1 2>/dev/null | awk '{ print $3 }' | grep 'KEY_')
-          sleep 0.2
+    while [ -z "$choice" ]; do
+        # 提取任意 KEY_* 按键名 (不依赖字段位置)
+        choice=$(getevent -qlc 1 2>/dev/null | sed -n 's/.*\(KEY_[A-Z0-9]*\).*/\1/p' | head -n 1)
+        sleep 0.2
     done
     case $choice in
         KEY_POWER)
@@ -217,6 +219,7 @@ fi
 
 # 确保运行/执行权限 (zip 内权限可能不含 +x, 尤其 cgi-bin 需 httpd 直接执行)
 chmod 755 "$MODULE_PATH"/bin/uperf "$MODULE_PATH"/bin/busybox/busybox \
+    "$MODULE_PATH"/action.sh "$MODULE_PATH"/install.sh "$MODULE_PATH"/uninstall.sh \
     "$MODULE_PATH"/script/*.sh "$MODULE_PATH"/common/*.sh \
     "$MODULE_PATH"/webroot/cgi-bin/*.sh 2>/dev/null
 # info

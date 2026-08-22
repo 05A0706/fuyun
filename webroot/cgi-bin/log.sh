@@ -18,12 +18,15 @@ json_headers
 printf '{"ok":true,"lines":['
 first=1
 if [ -f "$SRC" ]; then
-    tail -n "$LINES" "$SRC" 2>/dev/null | while IFS= read -r line; do
+    tail -n "$LINES" "$SRC" 2>/dev/null >"${TMPDIR:-/data/local/tmp}/fuyun_tail.$$"
+    while IFS= read -r line; do
         [ "$first" = "1" ] || printf ','
         # JSON 字符串转义 (引号/反斜杠/控制字符)
         esc=$(printf '%s' "$line" | sed 's/\\/\\\\/g;s/"/\\"/g')
         printf '"%s"' "$esc"
         first=0
-    done
+    done <"${TMPDIR:-/data/local/tmp}/fuyun_tail.$$"
+    rm -f "${TMPDIR:-/data/local/tmp}/fuyun_tail.$$"
 fi
-printf ']}\n'
+printf ']}
+'

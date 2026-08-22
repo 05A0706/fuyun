@@ -9,13 +9,20 @@ USER_STATE=/sdcard/Android/yc/uperf/vulkan.state
 mkdir -p "$STATE_DIR" 2>/dev/null
 mkdir -p /sdcard/Android/yc/uperf 2>/dev/null
 
+# resetprop 不可用时退回 setprop (避免脚本中断)
+if command -v resetprop >/dev/null 2>&1; then
+    PROP=resetprop
+else
+    PROP=setprop
+fi
+
 vulkan_on() {
-    resetprop ro.hwui.use_vulkan true
-    resetprop debug.hwui.renderer skiavk
-    resetprop debug.renderengine.backend skiavkthreaded
-    resetprop debug.renderengine.vulkan true
-    resetprop debug.renderengine.graphite true
-    resetprop debug.egl.hw 1
+    $PROP ro.hwui.use_vulkan true
+    $PROP debug.hwui.renderer skiavk
+    $PROP debug.renderengine.backend skiavkthreaded
+    $PROP debug.renderengine.vulkan true
+    $PROP debug.renderengine.graphite true
+    $PROP debug.egl.hw 1
     echo 1 >"$STATE_FILE" 2>/dev/null
     echo 1 >"$USER_STATE" 2>/dev/null
     echo " "
@@ -24,17 +31,26 @@ vulkan_on() {
 }
 
 vulkan_off() {
-    resetprop ro.hwui.use_vulkan false
-    resetprop debug.hwui.renderer opengl
-    resetprop debug.renderengine.backend threaded
-    resetprop debug.renderengine.vulkan false
-    resetprop debug.renderengine.graphite false
-    resetprop debug.egl.hw 0
+    $PROP ro.hwui.use_vulkan false
+    $PROP debug.hwui.renderer opengl
+    $PROP debug.renderengine.backend threaded
+    $PROP debug.renderengine.vulkan false
+    $PROP debug.renderengine.graphite false
+    $PROP debug.egl.hw 0
     echo 0 >"$STATE_FILE" 2>/dev/null
     echo 0 >"$USER_STATE" 2>/dev/null
     echo " "
     echo "已还原 OpenGL"
     echo " "
+}
+
+# 从 getevent 输出中提取「音量上/音量下 按下」(只认 DOWN, 过滤抬手 UP)。
+# 不依赖字段位置, 兼容带/不带时间戳、toybox/AOSP getevent 的多种输出格式。
+read_key() {
+    awk '
+        /KEY_VOLUMEUP/   && /DOWN/ { print "KEY_VOLUMEUP";   exit }
+        /KEY_VOLUMEDOWN/ && /DOWN/ { print "KEY_VOLUMEDOWN"; exit }
+    ' "$1" 2>/dev/null
 }
 
 echo "=============================="
@@ -45,19 +61,21 @@ echo "=============================="
 
 tmpf=/data/local/tmp/fuyun_vk_key.txt
 rm -f "$tmpf"
-getevent -qlc 1 >"$tmpf" 2>/dev/null &
-gpid=$!
-waited=0
-while kill -0 "$gpid" 2>/dev/null && [ "$waited" -lt 10 ]; do
-    sleep 1
-    waited=$((waited + 1))
-done
-if kill -0 "$gpid" 2>/dev/null; then
+choice=
+
+if command -v getevent >/dev/null 2>&1; then
+    # 读多个事件覆盖 DOWN+UP 事件对; 收到按键立即退出, 10 秒无按键自动超时
+    getevent -qlc 8 >"$tmpf" 2>/dev/null &
+    gpid=$!
+    waited=0
+    while [ "$waited" -lt 20 ]; do
+        grep -qE 'KEY_VOLUME(UP|DOWN).*DOWN' "$tmpf" 2>/dev/null && break
+        kill -0 "$gpid" 2>/dev/null || break
+        sleep 0.5
+        waited=$((waited + 1))
+    done
     kill "$gpid" 2>/dev/null
-    choice=""
-else
-    # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止误判
-    choice=$(awk '{ print $3, $4 }' "$tmpf" | grep 'KEY_' | awk '$2 == "DOWN" || $2 == "" { print $1 }')
+    choice=$(read_key "$tmpf")
 fi
 rm -f "$tmpf"
 

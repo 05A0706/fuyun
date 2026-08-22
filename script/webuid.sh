@@ -14,13 +14,28 @@ BASEDIR="$(dirname "$(readlink -f "$0")")"
 MODDIR="${BASEDIR%\/script}"
 WEBROOT="$MODDIR/webroot"
 PORT=16800
+# 16800 = 0x4198, 本地回环地址 127.0.0.1 在 /proc/net/tcp 中为 0100007F
+PORT_HEX=4198
 PIDFILE="/data/local/tmp/webuid.pid"
 LOGFILE="/data/local/tmp/webuid.log"
 
 log() { echo "[webuid] $(date '+%m-%d %H:%M:%S') $*" >>"$LOGFILE"; }
 
+# 端口占用检测: 直接查 /proc/net/tcp, 不依赖 nc (部分设备无 nc/-z)
 port_in_use() {
-    toybox nc -z 127.0.0.1 "$PORT" 2>/dev/null && return 0
+    grep -qE "^ *[0-9]+: 0100007F:$PORT_HEX " /proc/net/tcp 2>/dev/null && return 0
+    grep -qE "^ *[0-9]+: 0100007F:$PORT_HEX " /proc/net/tcp6 2>/dev/null && return 0
+    return 1
+}
+
+# HTTP 自检: wget / curl 任一可用即可, 都没有则仅依赖端口检查
+http_ping() {
+    if command -v wget >/dev/null 2>&1; then
+        wget -q -O /dev/null "$1" 2>/dev/null && return 0
+    fi
+    if command -v curl >/dev/null 2>&1; then
+        curl -fs -o /dev/null "$1" 2>/dev/null && return 0
+    fi
     return 1
 }
 
@@ -39,17 +54,21 @@ find_httpd() {
 }
 
 start() {
+    # 自愈: 确保 CGI 脚本可执行 (部分安装流程会丢失 +x, 导致 API 全部 403)
+    chmod 755 "$WEBROOT"/cgi-bin/*.sh 2>/dev/null
+
     port_in_use && { log "port $PORT already in use, skip"; return 0; }
     [ -d "$WEBROOT" ] || { log "webroot missing: $WEBROOT"; return 1; }
 
+    local httpd args pid
     case "$(find_httpd)" in
     toybox)
-        # toybox httpd: -c 指定 CGI 前缀
-        toybox httpd -p 127.0.0.1:$PORT -h "$WEBROOT" -c /cgi-bin >>"$LOGFILE" 2>&1 &
+        httpd="toybox httpd"
+        args="-c /cgi-bin"
         ;;
     busybox)
-        # busybox httpd: /cgi-bin/ 路径自动按 CGI 执行
-        "$MODDIR/bin/busybox/busybox" httpd -p 127.0.0.1:$PORT -h "$WEBROOT" >>"$LOGFILE" 2>&1 &
+        httpd="$MODDIR/bin/busybox/busybox httpd"
+        args=""
         ;;
     none)
         log "no httpd available, WebUI disabled"
@@ -57,27 +76,53 @@ start() {
         ;;
     esac
 
-    local pid=$!
-    echo "$pid" >"$PIDFILE"
+    # 1) 先试前台模式 (-f, 进程 PID 可控; 部分旧版不支持则自动回退)
+    $httpd -f -p 127.0.0.1:$PORT -h "$WEBROOT" $args >>"$LOGFILE" 2>&1 &
+    pid=$!
     sleep 1
-
-    # 自检: 请求 status API
-    if toybox wget -q -O /dev/null "http://127.0.0.1:$PORT/cgi-bin/status.sh" 2>/dev/null; then
-        log "started OK on 127.0.0.1:$PORT (pid $pid)"
-    elif port_in_use; then
-        log "port in use after start (assume OK)"
-    else
-        log "httpd self-check FAILED (pid $pid)"
+    if port_in_use; then
+        echo "$pid" >"$PIDFILE"
+        if http_ping "http://127.0.0.1:$PORT/cgi-bin/status.sh"; then
+            log "started OK on 127.0.0.1:$PORT (pid $pid)"
+        else
+            log "port in use, API self-check failed (pid $pid)"
+        fi
+        return 0
     fi
+    kill "$pid" 2>/dev/null
+
+    # 2) 回退默认模式
+    $httpd -p 127.0.0.1:$PORT -h "$WEBROOT" $args >>"$LOGFILE" 2>&1 &
+    pid=$!
+    sleep 1
+    if port_in_use; then
+        echo "$pid" >"$PIDFILE"
+        if http_ping "http://127.0.0.1:$PORT/cgi-bin/status.sh"; then
+            log "started OK on 127.0.0.1:$PORT (pid $pid)"
+        else
+            log "port in use, API self-check failed (pid $pid)"
+        fi
+        return 0
+    fi
+    kill "$pid" 2>/dev/null
+
+    log "httpd failed to start on 127.0.0.1:$PORT"
+    return 1
 }
 
 stop() {
+    # 先杀 PID 文件记录
     if [ -f "$PIDFILE" ]; then
         kill "$(cat "$PIDFILE")" 2>/dev/null
         rm -f "$PIDFILE"
-        log "stopped"
+    fi
+    # 兜底: 按命令行特征清理本模块 httpd (兼容 httpd 自行 daemonize 的情况)
+    command -v pkill >/dev/null 2>&1 && pkill -f "httpd.*127\\.0\\.0\\.1:$PORT" 2>/dev/null
+    sleep 1
+    if port_in_use; then
+        log "stopped (port still in use by other process)"
     else
-        log "not running"
+        log "stopped"
     fi
 }
 

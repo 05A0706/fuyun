@@ -6,6 +6,15 @@
 #   1) 保留原有「全局/大核最高频率上限」(freq_limit.txt)
 #   2) 新增「小/中/大核分别设置 min/max」(freq_range.txt)
 #      支持任意 SoC 支持频点, min=max 即锁频。
+#      频点以设备实测 scaling_available_frequencies 为准 (内置表兜底),
+#      非法频点自动吸附到最近支持频点, 不再静默失效。
+#   3) 生效状态写入 freq_range.state (WebUI 按 policy 显示), 失败逐簇记日志。
+#      频点以设备实测 scaling_available_frequencies 为准 (内置表兜底),
+#      非法频点自动吸附到最近支持频点, 不再静默失效。
+#   3) 生效状态写入 freq_range.state (WebUI 按 policy 显示), 失败逐簇记日志。
+#      频点以设备实测 scaling_available_frequencies 为准 (内置表兜底),
+#      非法频点自动吸附到最近支持频点, 不再静默失效。
+#   3) 生效状态写入 freq_range.state (WebUI 按 policy 显示), 失败逐簇记日志。
 #   3) 上限/范围以下仍由 uperf 动态调频; 通过 bind-mount 掩码冻结,
 #      uperf 的后续写入无法突破。
 #
@@ -24,6 +33,7 @@ USER_PATH=/sdcard/Android/yc/uperf
 CFG="$USER_PATH/freq_limit.txt"
 RANGE_CFG="$USER_PATH/freq_range.txt"
 STATE_FILE="$USER_PATH/freq_limit.state"
+RANGE_STATE_FILE="$USER_PATH/freq_range.state"
 # per-policy 掩码文件前缀: 不同 policy 的生效值可能不同 (clamp 到各自最低频),
 # 必须各自独立掩码源, 否则共享 inode 后写覆盖先挂载 (所有挂载点读到同一值)
 MASK_CAP_PFX=/data/local/tmp/fuyun_freq_cap_
@@ -187,22 +197,45 @@ freq_table_file() {
     case "$(soc_name)" in
         sdm8g2) echo "$MODDIR/script/freq_table_8g2.txt" ;;
         sdm8+)  echo "$MODDIR/script/freq_table_8p.txt" ;;
+        sdm8g3) echo "$MODDIR/script/freq_table_8g3.txt" ;;
+        sdm8e)  echo "$MODDIR/script/freq_table_8e.txt" ;;
+        sdm8e5) echo "$MODDIR/script/freq_table_8e5.txt" ;;
         *)      echo "" ;;
     esac
 }
 
-# $1: little|mid|big; 输出该簇支持频点 (每行一个)
-supported_freqs() {
-    local tbl sec
+# $1: policy 路径  $2: little|mid|big; 输出该 policy 支持频点 (每行一个)
+# 优先读设备实测 scaling_available_frequencies, 缺失时回退内置频点表
+policy_freqs() {
+    local p="$1" cluster="$2" f tbl
+    if [ -f "$p/scaling_available_frequencies" ]; then
+        f=$(cat "$p/scaling_available_frequencies" 2>/dev/null)
+    fi
+    if [ -z "$f" ] && [ -f "$p/scaling_boost_frequencies" ]; then
+        f=$(cat "$p/scaling_boost_frequencies" 2>/dev/null)
+    fi
+    if [ -n "$f" ]; then
+        echo "$f" | tr ' ' '\n' | grep -E '^[0-9]+$'
+        return 0
+    fi
     tbl=$(freq_table_file)
     [ -n "$tbl" ] || return 1
-    sec="$1"
-    awk -v s="$sec" 'BEGIN{ins=0} /^\[/{ins=($0=="[" s "]")} ins && $0 ~ /^[0-9]+$/ {print $1}' "$tbl" 2>/dev/null
+    awk -v s="[$cluster]" 'BEGIN{ins=0} /^\[/{ins=($0==s)} ins && $0 ~ /^[0-9]+$/ {print $1}' "$tbl" 2>/dev/null
 }
 
-# $1: little|mid|big  $2: kHz; 返回 0 = 支持
+# $1: policy  $2: little|mid|big  $3: kHz; 返回 0 = 该频点可用
 is_supported() {
-    supported_freqs "$1" | grep -qx "$2"
+    policy_freqs "$1" "$2" | grep -qx "$3"
+}
+
+# $1: policy  $2: cluster  $3: kHz; 输出 <= $3 的最大支持频点 (无则空)
+freq_floor() {
+    policy_freqs "$1" "$2" | awk -v v="$3" '$1<=v && $1>m {m=$1} END {if (m!="") print m}'
+}
+
+# $1: policy  $2: cluster  $3: kHz; 输出 >= $3 的最小支持频点 (无则空)
+freq_ceil() {
+    policy_freqs "$1" "$2" | awk -v v="$3" '{if ($1>=v && (m=="" || $1<m)) m=$1} END {if (m!="") print m}'
 }
 
 # $1: policy 路径; 输出 little|mid|big|unknown
@@ -246,8 +279,8 @@ cluster_of_policy() {
         case "$f" in ''|*[!0-9]*) continue ;; esac
         [ "$f" -gt "$bestf" ] && bestf=$f
     done
-    # 大核: 单核且是全局最高频
-    if [ "$count" -eq 1 ] && [ "$maxf" -ge "$bestf" ] 2>/dev/null; then
+    # 大核: 包含全局最高频核心的簇 (兼容 8 Elite 双核 Prime 簇 / 8 Gen3 单核 X4)
+    if [ "$maxf" -ge "$bestf" ] 2>/dev/null; then
         echo "big"
         return
     fi
@@ -276,22 +309,46 @@ clear_all() {
             hwmin=$(cat "$p/cpuinfo_min_freq" 2>/dev/null)
             case "$hwmin" in
                 ''|*[!0-9]*) ;;
-                *) echo "$hwmin" >"$p/scaling_min_freq" 2>/dev/null ;;
+                *) chmod 0666 "$p/scaling_min_freq" 2>/dev/null; echo "$hwmin" >"$p/scaling_min_freq" 2>/dev/null ;;
             esac
         fi
         if [ -f "$p/scaling_max_freq" ]; then
             hwmax=$(cat "$p/cpuinfo_max_freq" 2>/dev/null)
             case "$hwmax" in
                 ''|*[!0-9]*) ;;
-                *) echo "$hwmax" >"$p/scaling_max_freq" 2>/dev/null ;;
+                *) chmod 0666 "$p/scaling_max_freq" 2>/dev/null; echo "$hwmax" >"$p/scaling_max_freq" 2>/dev/null ;;
             esac
         fi
     done
+    rm -f "$RANGE_STATE_FILE" 2>/dev/null
+}
+
+# 写节点并掩码冻结; 返回 0 = 已冻结生效
+# 顺序: 解除旧掩码 → 真实写入内核 → 写掩码源文件 → bind-mount
+# bind-mount 失败时尝试只读锁定兜底 (注意: root 进程可绕过, 仅尽力而为)
+apply_node() {
+    local v="$1" n="$2" m="$3"
+    chmod 0666 "$n" 2>/dev/null
+    umount "$n" 2>/dev/null
+    if ! echo "$v" >"$n" 2>/dev/null; then
+        log "写入被内核拒绝: $n = $v kHz"
+        return 1
+    fi
+    if ! echo "$v" >"$m" 2>/dev/null; then
+        log "掩码源文件不可写: $m"
+        return 1
+    fi
+    if mount --bind "$m" "$n" 2>/dev/null; then
+        return 0
+    fi
+    chmod 0444 "$n" 2>/dev/null
+    log "bind-mount 失败: $n (已尝试只读锁定兜底, 对 root 进程可能无效)"
+    return 1
 }
 
 # 应用当前配置 (幂等)
 apply_all() {
-    local want cur p cluster hwmin hwmax cmin cmax do_min do_max applied ok
+    local want cur p cluster hwmin hwmax cmin cmax do_min do_max applied ok masked r
     load_cfg
     load_range_cfg
     # 息屏联动
@@ -313,6 +370,7 @@ apply_all() {
     fi
 
     applied=0
+    : >"$RANGE_STATE_FILE" 2>/dev/null
     for p in $(cpufreq_policies); do
         [ -f "$p/scaling_min_freq" ] || continue
         [ -f "$p/scaling_max_freq" ] || continue
@@ -326,37 +384,63 @@ apply_all() {
         cmax=0
         do_min=0
         do_max=0
+        # ---- 分簇 min/max (freq_range.txt) ----
         if [ "$FREQ_RANGE_ENABLE" = "1" ]; then
             case "$cluster" in
                 little) cmin=$LITTLE_MIN; cmax=$LITTLE_MAX ;;
                 mid)    cmin=$MID_MIN;    cmax=$MID_MAX ;;
                 big)    cmin=$BIG_MIN;    cmax=$BIG_MAX ;;
             esac
+            # min: 非法频点向上吸附到最近支持频点, 超过硬件上限则忽略
             if [ "$cmin" -ne 0 ] 2>/dev/null; then
-                if is_supported "$cluster" "$cmin"; then
+                if is_supported "$p" "$cluster" "$cmin"; then
                     do_min=1
                 else
-                    log "忽略非法 $cluster min=$cmin"
-                    cmin=0
+                    r=$(freq_ceil "$p" "$cluster" "$cmin")
+                    if [ -n "$r" ]; then
+                        log "$cluster min=${cmin}kHz 非支持频点, 自动吸附到 ${r}kHz"
+                        cmin=$r
+                        do_min=1
+                    else
+                        log "忽略 $cluster min=${cmin}kHz: 高于硬件上限或无可用频点"
+                        cmin=0
+                    fi
                 fi
             fi
+            # max: 非法频点向下吸附到最近支持频点, 低于硬件最低频则忽略
             if [ "$cmax" -ne 0 ] 2>/dev/null; then
-                if is_supported "$cluster" "$cmax"; then
+                if is_supported "$p" "$cluster" "$cmax"; then
                     do_max=1
                 else
-                    log "忽略非法 $cluster max=$cmax"
-                    cmax=0
+                    r=$(freq_floor "$p" "$cluster" "$cmax")
+                    if [ -n "$r" ]; then
+                        log "$cluster max=${cmax}kHz 非支持频点, 自动吸附到 ${r}kHz"
+                        cmax=$r
+                        do_max=1
+                    else
+                        log "忽略 $cluster max=${cmax}kHz: 低于硬件最低频或无可用频点"
+                        cmax=0
+                    fi
                 fi
             fi
         fi
-        # 全局上限叠加
+        # ---- 全局上限叠加 (freq_limit.txt) ----
         if [ "$FREQ_CAP" -gt 0 ] 2>/dev/null; then
             if [ "$FREQ_SCOPE" = "all" ] || [ "$cluster" = "big" ]; then
-                do_max=1
                 [ "$cmax" -eq 0 ] 2>/dev/null && cmax=$hwmax
                 [ "$cmax" -gt "$FREQ_CAP" ] && cmax=$FREQ_CAP
                 # 上限低于硬件最低频时锁最低频 (与旧逻辑一致)
                 [ "$cmax" -lt "$hwmin" ] && cmax=$hwmin
+                if ! is_supported "$p" "$cluster" "$cmax"; then
+                    r=$(freq_floor "$p" "$cluster" "$cmax")
+                    if [ -n "$r" ] && [ "$r" -ge "$hwmin" ] 2>/dev/null; then
+                        cmax=$r
+                    else
+                        cmax=$hwmin
+                    fi
+                    log "$cluster 上限吸附到 ${cmax}kHz"
+                fi
+                do_max=1
             fi
         fi
         # 没有需要控制的节点则跳过
@@ -366,25 +450,20 @@ apply_all() {
             log "忽略 $cluster min>max ($cmin>$cmax)"
             continue
         fi
-        ok=0
+        masked=0
         if [ "$do_min" = "1" ]; then
-            if echo "$cmin" >"$p/scaling_min_freq" 2>/dev/null; then
-                echo "$cmin" >"$MASK_MIN_PFX${p##*/}" 2>/dev/null
-                mount --bind "$MASK_MIN_PFX${p##*/}" "$p/scaling_min_freq" 2>/dev/null && ok=$((ok + 1))
-            fi
+            apply_node "$cmin" "$p/scaling_min_freq" "$MASK_MIN_PFX${p##*/}" && masked=$((masked + 1))
         fi
         if [ "$do_max" = "1" ]; then
-            if echo "$cmax" >"$p/scaling_max_freq" 2>/dev/null; then
-                echo "$cmax" >"$MASK_MAX_PFX${p##*/}" 2>/dev/null
-                mount --bind "$MASK_MAX_PFX${p##*/}" "$p/scaling_max_freq" 2>/dev/null && ok=$((ok + 1))
-            fi
+            apply_node "$cmax" "$p/scaling_max_freq" "$MASK_MAX_PFX${p##*/}" && masked=$((masked + 1))
         fi
-        [ "$ok" -gt 0 ] && applied=$((applied + 1))
+        echo "${p##*/} $cluster min=$cmin max=$cmax masked=$masked" >>"$RANGE_STATE_FILE"
+        [ "$masked" -gt 0 ] && applied=$((applied + 1))
     done
 
     if [ "$applied" -gt 0 ]; then
         echo "$want" >"$STATE_FILE"
-        log "已应用频率控制 (global cap=${FREQ_CAP}kHz range=${FREQ_RANGE_ENABLE})"
+        log "已应用频率控制 (global cap=${FREQ_CAP}kHz range=${FREQ_RANGE_ENABLE}, 明细见 freq_range.state)"
         type run_plugins >/dev/null 2>&1 && run_plugins "apply"
     else
         rm -f "$STATE_FILE"

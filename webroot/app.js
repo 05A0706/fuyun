@@ -243,9 +243,13 @@ async function loadFreqRange() {
     const active = r.enable === 1;
     badge(document.getElementById("freq-range-badge"), active, active ? "已启用" : "动态");
     const pols = r.policies || [];
+    const clName = { little: "小核", mid: "中核", big: "大核" };
     document.getElementById("freq-range-policies").textContent = pols.length
-      ? "当前实际频率：" + pols.map((p) => "policy" + p.policy + " " + (p.min_khz / 1000000).toFixed(2) + "-" + (p.max_khz / 1000000).toFixed(2) + "GHz").join("；")
-      : "当前实际频率：-";
+      ? "实际频率：" + pols.map((p) =>
+          (clName[p.cluster] || p.cluster) + " " +
+          (p.min_khz / 1000000).toFixed(2) + "-" + (p.max_khz / 1000000).toFixed(2) + "GHz" +
+          (p.masked === 1 ? " ✓" : " ✗")).join("；")
+      : "实际频率：-";
   } catch (e) { /* ignore */ }
 }
 

@@ -3,3 +3,46 @@
 
 - balance
 * balance
+
+# ---- 主流游戏: 前台自动切 performance 档 ----
+# 帧率稳定优先 (解锁大核 + 触控/渲染响应), 线程级省电由 uperf.json 游戏规则负责
+# (后台工作线程/音频/网络压小核限流)
+# 腾讯系 (Unity / UE)
+com.tencent.tmgp.sgame performance
+com.tencent.tmgp.sgamece performance
+com.tencent.tmgp.pubgmhd performance
+com.tencent.tmgp.pubgmhdf performance
+com.tencent.ig performance
+com.tencent.lolm performance
+com.tencent.lolmchess performance
+com.tencent.tmgp.cf performance
+com.tencent.tmgp.codm performance
+com.tencent.arena performance
+com.tencent.dfg performance
+com.tencent.tmgp.speed performance
+com.tencent.tmgp.hyrz performance
+com.tencent.ymzx performance
+com.tencent.honorofkings performance
+com.riotgames.league.wildrift performance
+com.activision.callofduty.shooter performance
+# 米哈游 (Unity)
+com.miHoYo.Yuanshen performance
+com.miHoYo.GenshinImpact performance
+com.miHoYo.hkrpg performance
+com.miHoYo.nap performance
+com.miHoYo.ZenlessZoneZero performance
+com.miHoYo.bh3 performance
+# 网易 (Unity)
+com.netease.egg performance
+com.netease.identity performance
+com.netease.sky performance
+com.thatgamecompany.sky performance
+com.netease.raiders performance
+com.netease.naraka performance
+com.netease.yjwj performance
+com.netease.onmyoji performance
+com.netease.mhxy performance
+# 其他
+com.perfectworld.toweroffantasy performance
+com.hypergryph.arknights performance
+com.aligames.sgz performance

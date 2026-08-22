@@ -61,6 +61,11 @@ install_uperf() {
         target=$(getprop ro.product.board)
         cfgname=$(get_config_name "$target")
     fi
+    # 代号认不出时按 CPU 簇布局探测 (支持 8 Gen3 / 8 Elite / 8 Elite Gen5 等)
+    if [ "$cfgname" = "unsupported" ] || [ ! -f "$MODULE_PATH/config/$cfgname.json" ]; then
+        cfgname=$(detect_soc_by_layout)
+        [ "$cfgname" != "unsupported" ] && echo "- 按 CPU 布局识别为 [$cfgname]"
+    fi
 
     if [ "$cfgname" = "unsupported" ] || [ ! -f "$MODULE_PATH/config/$cfgname.json" ]; then
         abort "Target [$target] not supported."
@@ -130,7 +135,7 @@ choose_screen_saver() {
 }
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
-echo "浮云 26w34.5-B"
+echo "浮云 26w34.7-B"
 sleep 1
 echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1

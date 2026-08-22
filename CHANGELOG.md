@@ -1,5 +1,42 @@
 # 更新日志
 
+## fuyun 26w34.7-b (202608222)
+
+### 新增平台支持: 骁龙 8 Gen3 / 8 Elite (8 Gen4) / 8 Elite Gen5 (8e5)
+- 新增配置 `sdm8g3.json`（8 Gen3/SM8650，1+5+2：X4 3.3G + A720×5 + A520×2，Adreno 750）
+- 新增配置 `sdm8e.json`（8 Elite/SM8750，2+6：2×Oryon 4.32G + 6×Oryon 3.53G，Adreno 830）
+- 新增配置 `sdm8e5.json`（8 Elite Gen5/8e5/SM8850，第三代 Oryon 2+6，4.6G 级，参数为占位初版）
+- 新平台参数基于规格书起保守初版，未实测调参，欢迎真机反馈迭代（反馈内容见 docs/tuning-8e.md）
+
+### 平台识别增强
+- 代号映射：`pineapple`→8 Gen3、`sun`→8 Elite、`shark`→8 Elite Gen5（候选）
+- **布局探测兜底**：代号认不出时按 CPU 簇布局自动识别（单核大核 3 簇 → 8G3 系；双核 Prime 簇 2 簇 → 8E 系），按最高频区分 8 Gen3/8s、8 Elite/8 Elite Gen5
+- 安装流程 `setup.sh` 在代号识别失败时自动走布局探测，仍失败才 abort
+
+### 簇识别修复（8 Elite 双核 Prime 簇兼容）
+- `cluster_of_policy` 大核判定从「单核且最高频」改为「包含全局最高频核心的簇」，8 Elite 的 2 核 Prime 簇（CPU6-7）正确识别为大核
+- WebUI 频率范围 CGI 同步修复
+
+### 修复: CPU 频率范围 (小/中/大核 min/max) 失效问题
+- 频点校验改为**设备实测优先**（读 scaling_available_frequencies，内置表仅兜底）：不再因内置频点表与设备实际频点不一致导致全部设置静默失效
+- **非法频点自动吸附**：min 向上取最近支持频点、max 向下取最近支持频点，超出硬件范围忽略并记日志；写入被内核拒绝时逐簇显式记日志
+- bind-mount 失败时显式记录并尝试只读锁定兜底；逐 policy 生效状态写入 freq_range.state
+- WebUI「CPU 频率范围」：下拉框显示设备实测频点；设置任意 min/max 自动启用总开关；按 小核/中核/大核 显示实际频率与冻结生效状态（✓/✗）
+
+### 新增: 主流游戏特调 (按引擎分组)
+- sdm8g2.json / sdm8+.json 新增/扩充游戏规则块：
+  - **Unity 系**: 王者荣耀 / 英雄联盟手游 / 金铲铲之战 / 穿越火线手游 / 使命召唤手游 / 暗区突围 / QQ飞车手游 / 火影忍者手游 / 元梦之星
+  - **米哈游定制 Unity**: 原神 / 崩坏：星穹铁道 / 绝区零 / 崩坏3
+  - **网易 Unity**: 蛋仔派对 / 第五人格 / 光遇 / 逆水寒手游 / 永劫无间手游 / 阴阳师 / 梦幻西游手游
+  - **UE4/UE5**: 和平精英 / 幻塔 / 三角洲行动
+- 特调策略：渲染/游戏线程高优 + 动态升频（dynamic_boost），后台工作线程/音频/网络压小核限流 —— **帧率更稳的同时省电**
+- 按引擎适配线程名：Unity（UnityMain / RenderThread / Job.Worker）、UE（GameThread / RenderThread / RHIThread / WorkerThread）
+- perapp_powermode.txt 预置 30+ 款游戏 = performance 档（前台自动解锁大核与高功率预算）
+
+### 其他
+- 新增频率表兜底 `freq_table_8g3/8e/8e5.txt`（设备实测优先，仅兜底）
+- 游戏特调规则随新平台布局自动适配：8 Gen3 小核为 core0-1；8 Elite 无小核，后台限流改压低段性能核
+
 ## fuyun 26w34.6-b (20260822)
 
 ### 新增 Vulkan 音量键切换

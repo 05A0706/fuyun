@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "fuyun",
+    "name": "fuyun-8g3",
     "author": "05A0706"
   },
   "modules": {
@@ -38,36 +38,27 @@
       "enable": true,
       "powerModel": [
         {
-          "efficiency": 100,
-          "nr": 3,
-          "typicalPower": 0.55,
+          "efficiency": 110,
+          "nr": 2,
+          "typicalPower": 0.5,
           "typicalFreq": 1.4,
-          "sweetFreq": 1.1,
+          "sweetFreq": 1.2,
           "plainFreq": 0.5,
           "freeFreq": 0.3
         },
         {
-          "efficiency": 260,
-          "nr": 2,
-          "typicalPower": 0.67,
-          "typicalFreq": 1.8,
-          "sweetFreq": 1.4,
-          "plainFreq": 0.8,
-          "freeFreq": 0.4
-        },
-        {
-          "efficiency": 220,
-          "nr": 2,
-          "typicalPower": 0.79,
+          "efficiency": 240,
+          "nr": 5,
+          "typicalPower": 0.9,
           "typicalFreq": 2,
-          "sweetFreq": 1.6,
-          "plainFreq": 0.8,
+          "sweetFreq": 1.7,
+          "plainFreq": 0.9,
           "freeFreq": 0.4
         },
         {
-          "efficiency": 420,
+          "efficiency": 430,
           "nr": 1,
-          "typicalPower": 2.18,
+          "typicalPower": 2.4,
           "typicalFreq": 2.2,
           "sweetFreq": 1.8,
           "plainFreq": 1.1,
@@ -148,13 +139,6 @@
           "idle": "c6",
           "touch": "c6",
           "boost": "c6"
-        },
-        "core0-2": {
-          "fg": "c0,c1,c2",
-          "bg": "c0,c1,c2",
-          "idle": "c0,c1,c2",
-          "touch": "c0,c1,c2",
-          "boost": "c0,c1,c2"
         },
         "core6-7": {
           "fg": "c6,c7",
@@ -606,13 +590,13 @@
             },
             {
               "k": "^(ImageLoader|ImageFetcher|NetworkThread|DownloadThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "40%"
             },
             {
               "k": "^(OkHttp|AsyncTask|ThreadPoolExecutor|DispatchThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
@@ -645,13 +629,13 @@
             },
             {
               "k": "^(NetworkService|IOThread|MemoryInfra|ThreadPool)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "35%"
             },
             {
               "k": "^(CacheThread|DiskCache|HistoryThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
@@ -746,12 +730,12 @@
             },
             {
               "k": "^(Job.Worker|Worker Thread|NativeThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioTrack|AudioThread|DecoderThread|OkHttp|NetworkThread|Xqa|Bugly|xlog_)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "30%"
             },
@@ -789,12 +773,12 @@
             },
             {
               "k": "^(Job.Worker|Worker Thread|NativeThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioTrack|AudioThread|DecoderThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
@@ -825,12 +809,12 @@
             },
             {
               "k": "^(Job.Worker|Worker Thread|NativeThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "30%"
             },
@@ -866,12 +850,12 @@
             },
             {
               "k": "^(Job.Worker|Worker Thread|NativeThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "30%"
             },
@@ -907,12 +891,12 @@
             },
             {
               "k": "^(WorkerThread|TaskGraph|StatsThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioThread|DecoderThread|NetworkThread|OkHttp)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "30%"
             },
@@ -940,7 +924,7 @@
             },
             {
               "k": "^(Job.Worker|NativeThread|NetworkThread|OkHttp)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg",
               "cpu_quota": "30%"
             },
@@ -972,12 +956,12 @@
             },
             {
               "k": "^(Job.Worker|Worker Thread|NativeThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
               "k": "^(AudioTrack|AudioThread|DecoderThread)",
-              "ac": "core0-2",
+              "ac": "core0-1",
               "pc": "bg"
             },
             {
@@ -1079,8 +1063,8 @@
       "GpuGovernor": "msm-adreno-tz",
       "cpusetTa": "0-7",
       "cpusetFg": "0-7",
-      "cpusetBg": "0-2",
-      "cpusetSysBg": "0-2",
+      "cpusetBg": "0-1",
+      "cpusetSysBg": "0-1",
       "cpusetRe": "0-6"
     },
     "sched": {
@@ -1097,8 +1081,8 @@
         "cpu.margin": 0.2,
         "sysfs.cpusetTa": "0-6",
         "sysfs.cpusetFg": "0-6",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetBg": "0-1",
+        "sysfs.cpusetSysBg": "0-1",
         "sysfs.cpusetRe": "0-6"
       },
       "idle": {
@@ -1145,9 +1129,9 @@
         "cpu.margin": 0.05,
         "sysfs.cpusetTa": "0-5",
         "sysfs.cpusetFg": "0-5",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
-        "sysfs.cpusetRe": "0-2"
+        "sysfs.cpusetBg": "0-1",
+        "sysfs.cpusetSysBg": "0-1",
+        "sysfs.cpusetRe": "0-1"
       },
       "idle": {
         "cpu.baseSampleTime": 0.06,
@@ -1205,8 +1189,8 @@
         "cpu.fastLimitPower": 8,
         "sysfs.cpusetTa": "0-7",
         "sysfs.cpusetFg": "0-7",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetBg": "0-1",
+        "sysfs.cpusetSysBg": "0-1",
         "sysfs.cpusetRe": "0-7"
       },
       "idle": {
@@ -1271,8 +1255,8 @@
         "cpu.margin": 0.65,
         "sysfs.cpusetTa": "0-7",
         "sysfs.cpusetFg": "0-7",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetBg": "0-1",
+        "sysfs.cpusetSysBg": "0-1",
         "sysfs.cpusetRe": "0-7"
       },
       "idle": {

@@ -96,7 +96,7 @@
   <!-- CPU 频率范围 -->
   <section class="card">
     <h2>CPU 频率范围 <span id="freq-range-badge" class="badge na">动态</span></h2>
-    <p class="hint">分别设置小核 / 中核 / 大核的频率下限与上限，0 = 动态；min=max = 锁频。只允许选择当前 SoC 支持频点。</p>
+    <p class="hint">分别设置小核 / 中核 / 大核的频率下限与上限，0 = 动态；min=max = 锁频。下拉框显示设备实测支持频点，非法值自动吸附到最近频点并记录日志。</p>
     <div class="form">
       <div class="row">
         <label for="f-rng-enable">启用频率范围</label>
@@ -138,7 +138,7 @@
         <button id="btnClearFreqRange" class="btn warn">恢复动态</button>
         <span id="freq-range-saved" class="ok hidden">已应用 ✓</span>
       </div>
-      <p class="hint" id="freq-range-policies">当前实际频率：-</p>
+      <p class="hint" id="freq-range-policies">实际频率：-（✓ 已冻结生效 / ✗ 未生效，详见 mem_log.txt 频率限制日志）</p>
     </div>
   </section>
 

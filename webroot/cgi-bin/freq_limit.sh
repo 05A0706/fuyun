@@ -49,7 +49,7 @@ get)
     echo "$OFFCAP" | grep -qE '^[0-9]+$' || OFFCAP=1200000
     { [ "$OFFCAP" -ge 0 ] 2>/dev/null && [ "$OFFCAP" -le 5000000 ] 2>/dev/null; } || OFFCAP=1200000
     ACTIVE=0
-    grep -q "^$FREQ_MASK_SRC" /proc/mounts 2>/dev/null && ACTIVE=1
+    grep -qE "fuyun_freq_(cap|min|max)_" /proc/mounts 2>/dev/null && ACTIVE=1
     BIG_MAX=0
     for p in /sys/devices/system/cpu/cpufreq/policy*; do
         [ -f "$p/cpuinfo_max_freq" ] || continue
@@ -106,7 +106,7 @@ set)
     sh /data/adb/modules/uperf/script/freq_limit.sh apply 2>/dev/null
     # 报告应用结果
     ACTIVE=0
-    grep -q "^$FREQ_MASK_SRC" /proc/mounts 2>/dev/null && ACTIVE=1
+    grep -qE "fuyun_freq_(cap|min|max)_" /proc/mounts 2>/dev/null && ACTIVE=1
     if [ "$KEY" = "FREQ_CAP" ] && [ "$VAL" = "0" ]; then
         json_ok "已切换为动态频率"
     elif [ "$ACTIVE" = "1" ]; then

@@ -68,8 +68,23 @@ echo "$FREQ_CAP" | grep -qE '^[0-9]+$' || FREQ_CAP=0
 case "$FREQ_SCOPE" in big|all) ;; *) FREQ_SCOPE=big ;; esac
 case "$FREQ_OFFSCREEN" in 0|1) ;; *) FREQ_OFFSCREEN=1 ;; esac
 echo "$FREQ_OFFCAP" | grep -qE '^[0-9]+$' || FREQ_OFFCAP=1200000
+# CPU 频率范围状态 (freq_range.txt)
+FREQ_RANGE_ENABLE=$(grep "^FREQ_RANGE_ENABLE=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+[ "$FREQ_RANGE_ENABLE" = "1" ] || FREQ_RANGE_ENABLE=0
+LITTLE_MIN=$(grep "^LITTLE_MIN=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+LITTLE_MAX=$(grep "^LITTLE_MAX=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+MID_MIN=$(grep "^MID_MIN=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+MID_MAX=$(grep "^MID_MAX=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+BIG_MIN=$(grep "^BIG_MIN=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+BIG_MAX=$(grep "^BIG_MAX=" "$FREQ_RANGE_CFG" 2>/dev/null | head -n 1 | cut -d= -f2)
+echo "$LITTLE_MIN" | grep -qE '^[0-9]+$' || LITTLE_MIN=0
+echo "$LITTLE_MAX" | grep -qE '^[0-9]+$' || LITTLE_MAX=0
+echo "$MID_MIN" | grep -qE '^[0-9]+$' || MID_MIN=0
+echo "$MID_MAX" | grep -qE '^[0-9]+$' || MID_MAX=0
+echo "$BIG_MIN" | grep -qE '^[0-9]+$' || BIG_MIN=0
+echo "$BIG_MAX" | grep -qE '^[0-9]+$' || BIG_MAX=0
 FREQ_ACTIVE=0
-grep -q "^$FREQ_MASK_SRC" /proc/mounts 2>/dev/null && FREQ_ACTIVE=1
+grep -qE "fuyun_freq_(cap|min|max)_" /proc/mounts 2>/dev/null && FREQ_ACTIVE=1
 FREQ_BIG_MAX=0
 for p in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -f "$p/cpuinfo_max_freq" ] || continue

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "fuyun",
+    "name": "fuyun-8e5",
     "author": "05A0706"
   },
   "modules": {
@@ -38,40 +38,22 @@
       "enable": true,
       "powerModel": [
         {
-          "efficiency": 100,
-          "nr": 3,
-          "typicalPower": 0.55,
-          "typicalFreq": 1.4,
-          "sweetFreq": 1.1,
-          "plainFreq": 0.5,
-          "freeFreq": 0.3
-        },
-        {
-          "efficiency": 260,
-          "nr": 2,
-          "typicalPower": 0.67,
-          "typicalFreq": 1.8,
-          "sweetFreq": 1.4,
-          "plainFreq": 0.8,
-          "freeFreq": 0.4
-        },
-        {
-          "efficiency": 220,
-          "nr": 2,
-          "typicalPower": 0.79,
-          "typicalFreq": 2,
-          "sweetFreq": 1.6,
-          "plainFreq": 0.8,
-          "freeFreq": 0.4
-        },
-        {
-          "efficiency": 420,
-          "nr": 1,
-          "typicalPower": 2.18,
-          "typicalFreq": 2.2,
+          "efficiency": 280,
+          "nr": 6,
+          "typicalPower": 1.2,
+          "typicalFreq": 2.1,
           "sweetFreq": 1.8,
-          "plainFreq": 1.1,
+          "plainFreq": 0.8,
           "freeFreq": 0.5
+        },
+        {
+          "efficiency": 520,
+          "nr": 2,
+          "typicalPower": 2.6,
+          "typicalFreq": 2.5,
+          "sweetFreq": 2.1,
+          "plainFreq": 1.2,
+          "freeFreq": 0.6
         }
       ]
     },
@@ -1079,9 +1061,9 @@
       "GpuGovernor": "msm-adreno-tz",
       "cpusetTa": "0-7",
       "cpusetFg": "0-7",
-      "cpusetBg": "0-2",
-      "cpusetSysBg": "0-2",
-      "cpusetRe": "0-6"
+      "cpusetBg": "0-3",
+      "cpusetSysBg": "0-1",
+      "cpusetRe": "0-5"
     },
     "sched": {
       "scene": "idle"
@@ -1095,11 +1077,11 @@
         "cpu.fastLimitPower": 4,
         "cpu.fastLimitCapacity": 16,
         "cpu.margin": 0.2,
-        "sysfs.cpusetTa": "0-6",
-        "sysfs.cpusetFg": "0-6",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
-        "sysfs.cpusetRe": "0-6"
+        "sysfs.cpusetTa": "0-5",
+        "sysfs.cpusetFg": "0-5",
+        "sysfs.cpusetBg": "0-3",
+        "sysfs.cpusetSysBg": "0-1",
+        "sysfs.cpusetRe": "0-5"
       },
       "idle": {
         "cpu.baseSampleTime": 0.04,
@@ -1143,11 +1125,11 @@
         "cpu.fastLimitPower": 0.8,
         "cpu.fastLimitCapacity": 4,
         "cpu.margin": 0.05,
-        "sysfs.cpusetTa": "0-5",
-        "sysfs.cpusetFg": "0-5",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
-        "sysfs.cpusetRe": "0-2"
+        "sysfs.cpusetTa": "0-3",
+        "sysfs.cpusetFg": "0-3",
+        "sysfs.cpusetBg": "0-1",
+        "sysfs.cpusetSysBg": "0-1",
+        "sysfs.cpusetRe": "0-1"
       },
       "idle": {
         "cpu.baseSampleTime": 0.06,
@@ -1205,8 +1187,8 @@
         "cpu.fastLimitPower": 8,
         "sysfs.cpusetTa": "0-7",
         "sysfs.cpusetFg": "0-7",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetBg": "0-3",
+        "sysfs.cpusetSysBg": "0-1",
         "sysfs.cpusetRe": "0-7"
       },
       "idle": {
@@ -1271,8 +1253,8 @@
         "cpu.margin": 0.65,
         "sysfs.cpusetTa": "0-7",
         "sysfs.cpusetFg": "0-7",
-        "sysfs.cpusetBg": "0-2",
-        "sysfs.cpusetSysBg": "0-2",
+        "sysfs.cpusetBg": "0-3",
+        "sysfs.cpusetSysBg": "0-1",
         "sysfs.cpusetRe": "0-7"
       },
       "idle": {

@@ -116,7 +116,9 @@ _get_lahaina_type() {
 # $1:board_name
 get_config_name() {
     case "$1" in
-    "pineapple") echo "sdm8g3";;
+    "pineapple") echo "sdm8g3" ;; # 骁龙 8 Gen3 (SM8650)
+    "sun") echo "sdm8e" ;;        # 骁龙 8 Elite / 8 Gen4 (SM8750)
+    "shark") echo "sdm8e5" ;;    # 骁龙 8 Elite Gen5 / 8e5 (SM8850) 候选代号
     "kalama") echo "sdm8g2" ;;
     "taro") echo "sdm8+" ;;
     "lahaina") echo "$(_get_lahaina_type)" ;;
@@ -175,4 +177,68 @@ get_config_name() {
     "gs101") echo "gs101" ;;
     *) echo "unsupported" ;;
     esac
+}
+
+# 兜底: 按 CPU 簇布局探测平台 (get_config_name 认不出 ro.board.platform 时)
+# 依据: 最高频簇的核数 + 最高频值
+#   单核最高频簇 + 3 簇 (0-x / x-6 / 7) → 8 Gen3 系 (X4 3.3GHz) 或 8s 系 (X4 3.0GHz)
+#   双核最高频簇 + 2 簇 (0-5 / 6-7)  → 8 Elite 系 (Oryon 4.32GHz) 或 8 Elite Gen5 (4.6GHz)
+# 输出: sdm8g3 / sdm8se / sdm8e / sdm8e5 / unsupported
+detect_soc_by_layout() {
+    local bestf=0 bestn=0 f n p rel c a b i mincpu maxcpu
+    for p in /sys/devices/system/cpu/cpufreq/policy*; do
+        [ -f "$p/cpuinfo_max_freq" ] || continue
+        f=$(cat "$p/cpuinfo_max_freq" 2>/dev/null)
+        case "$f" in ''|*[!0-9]*) continue ;; esac
+        rel=$(cat "$p/related_cpus" 2>/dev/null)
+        [ -n "$rel" ] || rel=$(cat "$p/affected_cpus" 2>/dev/null)
+        n=0
+        mincpu=999
+        maxcpu=0
+        case "$rel" in
+            *-*)
+                a=${rel%-*}
+                b=${rel#*-}
+                i=$a
+                while [ "$i" -le "$b" ] 2>/dev/null; do
+                    n=$((n + 1))
+                    [ "$i" -lt "$mincpu" ] && mincpu=$i
+                    [ "$i" -gt "$maxcpu" ] && maxcpu=$i
+                    i=$((i + 1))
+                done
+                ;;
+            *)
+                for c in $(echo "$rel" | tr ',' ' '); do
+                    case "$c" in ''|*[!0-9]*) continue ;; esac
+                    n=$((n + 1))
+                    [ "$c" -lt "$mincpu" ] && mincpu=$c
+                    [ "$c" -gt "$maxcpu" ] && maxcpu=$c
+                done
+                ;;
+        esac
+        [ "$n" -gt 0 ] || continue
+        if [ "$f" -gt "$bestf" ]; then
+            bestf=$f
+            bestn=$n
+        fi
+    done
+    if [ "$bestf" -eq 0 ] 2>/dev/null; then
+        echo "unsupported"
+        return
+    fi
+    if [ "$bestn" -eq 1 ] 2>/dev/null; then
+        # 单大核 (X4): 3 簇布局, 按最高频区分 8 Gen3 (3.3G) / 8s (3.0G)
+        if [ "$bestf" -ge 3200000 ] 2>/dev/null; then
+            echo "sdm8g3"
+        else
+            echo "sdm8se"
+        fi
+        return
+    fi
+    # 双核 Prime 簇 (Oryon): 2 簇布局, 按最高频区分 8 Elite (4.32G) / 8 Elite Gen5 (4.6G)
+    if [ "$bestf" -ge 4400000 ] 2>/dev/null; then
+        echo "sdm8e5"
+    else
+        echo "sdm8e"
+    fi
 }

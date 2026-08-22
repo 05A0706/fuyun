@@ -1,14 +1,15 @@
 # 浮云调度(fuyun)
 
-基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，针对**骁龙 8+ Gen1 (sd8+gen1/SM8475)** 与 **骁龙 8 Gen2 (sd8gen2/SM8550)** 适配。
+基于 [yc9559/uperf](https://github.com/yc9559/uperf) 的 Magisk / KernelSU 性能调度模块，支持**骁龙 8+ Gen1 (SM8475)、8 Gen2 (SM8550)、8 Gen3 (SM8650)、8 Elite / 8 Gen4 (SM8750)、8 Elite Gen5 / 8 Gen5 (SM8850)**。
 
-> 当前版本：**26w34.6-b (20260822)**
+> 当前版本：**26w34.7-b (202608222)**
 
 **特性**
 - uperf 调度引擎接管 CPU/GPU 调度（powersave / balance / performance / fast 四档）
 - **辅助调速器**：前台应用持续低占用时（如停留在静态页面）自动压制空闲频率，恢复交互立即还原（可开关，性能档自动让位）
 - **频率限制**：CPU 最高频率硬上限（仅大核 / 全部核心），上限以下保留 uperf 动态调频，WebUI 一键切换（续航/压发热向）；**息屏自动限频**默认开启（息屏自动套用息屏上限，亮屏恢复，不干预应用）
-- **CPU 频率范围**：小核 / 中核 / 大核可分别设置频率下限与上限，支持任意 SoC 支持频点，min=max 即锁频；WebUI「CPU 频率范围」独立界面操作
+- **CPU 频率范围**：小核 / 中核 / 大核可分别设置频率下限与上限，支持任意 SoC 支持频点，min=max 即锁频；WebUI「CPU 频率范围」独立界面操作（频点以设备实测为准，非法值自动吸附到最近支持频点，按 policy 显示冻结生效状态）
+- **主流游戏特调**：按引擎分组预置 30+ 款主流游戏规则（Unity 系 / 米哈游定制 Unity / UE4 / UE5），渲染线程高优+动态升频、后台线程压小核限流，帧率稳的同时省电；游戏前台自动切 performance 档（perapp_powermode.txt 预置）
 - **第三方插件接口**：`/sdcard/Android/yc/uperf/plugins/` 下放置 `.sh` 或 `.json` 插件即可导入，模块在 apply / clear / boot 阶段自动调用，便于后续扩展而不改引擎
 - **Vulkan 开关**：Magisk 模块 Action 里按音量上开启 Vulkan、音量下还原 OpenGL，状态持久化，开机按上次选择生效
 - Vulkan 渲染启用 + GPU Boost（高通 KGSL 节点接管）
@@ -25,7 +26,9 @@
 | **Magisk** | Magisk 应用 → 模块 → 从本地安装（安装时按音量键确认，音量上继续） |
 | **KernelSU** | KernelSU → 模块 → 从本地安装（原生 `customize.sh` 流程，无按键交互） |
 
-要求：arm64 设备，骁龙 8+ Gen1 / 8 Gen2，Android 10+ (SDK 29+)。
+要求：arm64 设备，骁龙 8+ Gen1 / 8 Gen2 / 8 Gen3 / 8 Elite / 8 Elite Gen5，Android 10+ (SDK 29+)。
+
+> 平台识别：优先按 ro.board.platform 匹配（8 Gen3=pineapple、8 Elite=sun、8 Elite Gen5 候选 shark）；识别不出时按 CPU 簇布局自动探测（单大核 3 簇 → 8G3 系，双核 Prime 簇 2 簇 → 8E 系）。8 Elite / 8 Elite Gen5 为新适配平台，参数为保守初版，欢迎真机反馈迭代（详见 docs/tuning-8e.md）。
 
 > ⚠️ 安装前建议备份重要数据。模块包含激进调度策略，有极小概率导致异常，出问题可进 Magisk/KernelSU 禁用模块恢复。
 

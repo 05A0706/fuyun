@@ -1,5 +1,18 @@
 # 更新日志
 
+## fuyun 26w34.7-b-fix (202608222) 修复补丁 2
+
+### 修复: WebUI 能打开但 API 全部失败（CGI 脚本 CRLF 行尾）
+- 根因：全模块文本文件均为 Windows CRLF 行尾。busybox httpd 通过 execve 直接执行 CGI 脚本，内核按 shebang 找解释器时 `#!/system/bin/sh\r` 尾部 \r 导致解释器不存在 → 页面（静态文件）能打开，但所有 `cgi-bin/*.sh` API 全部失败
+- 全部 65 个文本文件（`*.sh`/`*.txt`/`*.json` 等）统一转 LF；新增 `.gitattributes` 强制 LF，防止 Windows 编辑/打包复发
+- `webuid.sh` 启动自愈：检测到 CRLF 自动 `tr -d '\r'` 幂等修复（已装机模块无需重刷，重启/restart 即修复）
+- zip 重新打包：LF 内容 + 脚本/二进制统一 0755
+
+### 修复: 安装流程 setup.sh 卡死/无法使用
+- 音量键确认原为 `while [ -z "$choice" ]` 无限等待 getevent 输出；Magisk App 等环境下 /dev/input 不可读时安装永久卡死
+- 改为 10 秒超时确认：后台 getevent + 轮询文件，无按键/超时/getevent 缺失默认继续安装；音量下/电源键取消
+- 确认 case 增加默认分支：杂散按键不再静默跳过 `install_uperf`（旧逻辑会提示安装成功但配置未复制，模块实际不可用）
+
 ## fuyun 26w34.7-b-fix (202608222) 修复补丁
 
 ### 修复: action.sh 音量键失效

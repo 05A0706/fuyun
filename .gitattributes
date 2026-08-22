@@ -1,0 +1,15 @@
+# 统一 LF 行尾: 防止 Windows 编辑/打包重新引入 CRLF
+# (CRLF 会破坏 CGI 脚本 shebang: "#!/system/bin/sh\r" 导致 execve 找不到解释器,
+#  表现为 WebUI 能打开但 API 全部失败)
+* text=auto
+*.sh text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.prop text eol=lf
+META-INF/** text eol=lf
+bin/* binary
+*.zip binary

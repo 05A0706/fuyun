@@ -19,6 +19,11 @@ BASEDIR=$(dirname $(readlink -f $0))
 . $BASEDIR/pathinfo.sh
 . $BASEDIR/libsysinfo.sh
 
+# 静默初始化模式: setup.sh --silent
+# 供开机兜底/未执行安装脚本的安装方式使用: 跳过横幅与按键交互, 不覆盖用户配置
+SILENT=0
+[ "$1" = "--silent" ] && SILENT=1
+
 # grep_prop 由 Magisk util_functions 提供, KernelSU 环境不存在时自备兼容实现
 type grep_prop >/dev/null 2>&1 || grep_prop() {
     grep "^$1=" "$2" 2>/dev/null | head -n 1 | cut -d= -f2
@@ -73,8 +78,13 @@ install_uperf() {
 
     echo "- Uperf config is located at $USER_PATH"
     mkdir -p "$USER_PATH"
-    [ -f "$USER_PATH/uperf.json" ] && mv -f "$USER_PATH/uperf.json" "$USER_PATH/uperf.json.bak"
-    cp -f "$MODULE_PATH/config/$cfgname.json" "$USER_PATH/uperf.json"
+    if [ "$FUYUN_NO_OVERWRITE" = "1" ]; then
+        # 静默兜底: 只补缺失配置, 绝不覆盖用户已有 uperf.json
+        [ -f "$USER_PATH/uperf.json" ] || cp -f "$MODULE_PATH/config/$cfgname.json" "$USER_PATH/uperf.json"
+    else
+        [ -f "$USER_PATH/uperf.json" ] && mv -f "$USER_PATH/uperf.json" "$USER_PATH/uperf.json.bak"
+        cp -f "$MODULE_PATH/config/$cfgname.json" "$USER_PATH/uperf.json"
+    fi
     [ ! -e $USER_PATH/perapp_powermode.txt ] && cp $MODULE_PATH/config/perapp_powermode.txt $USER_PATH/perapp_powermode.txt
     [ ! -e $USER_PATH/mem_config.txt ] && cp $MODULE_PATH/config/mem_config.txt $USER_PATH/mem_config.txt
     [ ! -e $USER_PATH/mem_whitelist.txt ] && cp $MODULE_PATH/config/mem_whitelist.txt $USER_PATH/mem_whitelist.txt
@@ -98,7 +108,7 @@ choose_screen_saver() {
     echo "  音量上 = 开启 (推荐, 墓碑冻结应用+本模块压频)"
     echo "  音量下 = 关闭 (息屏完全交给系统/墓碑)"
     echo "  10 秒无按键默认开启"
-    if [ "$KSU" = "true" ]; then
+    if [ "$KSU" = "true" ] || [ "$SILENT" = "1" ]; then
         echo "KernelSU 环境, 默认开启"
         echo "SCREEN_SAVER=1" >"$USER_PATH/screen_saver.txt"
         return 0
@@ -134,6 +144,16 @@ choose_screen_saver() {
             ;;
     esac
 }
+# 静默模式: 跳过横幅与按键交互, 仅做配置补全 + 权限设置 (开机兜底用)
+if [ "$SILENT" = "1" ]; then
+    FUYUN_NO_OVERWRITE=1 install_uperf
+    choose_screen_saver
+    chmod 755 "$MODULE_PATH"/bin/uperf "$MODULE_PATH"/bin/busybox/busybox \
+        "$MODULE_PATH"/action.sh "$MODULE_PATH"/install.sh "$MODULE_PATH"/uninstall.sh \
+        "$MODULE_PATH"/script/*.sh "$MODULE_PATH"/common/*.sh \
+        "$MODULE_PATH"/webroot/cgi-bin/*.sh 2>/dev/null
+    exit 0
+fi
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
 echo "浮云 26w34.6-B"
@@ -191,29 +211,41 @@ if [ "$KSU" = "true" ]; then
     choose_screen_saver
 else
     echo "这是一个beta更新 稳定性未知，请谨慎安装"
-    echo "按音量上继续 音量下退出"
+    echo "按音量上继续 音量下退出 (10 秒无按键自动继续)"
+    # 音量键确认: 带超时与 getevent 不可用兜底, 防止安装卡死
+    # (Magisk App 等环境下 /dev/input 可能不可读, 原 while 循环会无限等待)
     choice=
-    while [ -z "$choice" ]; do
-        # 提取任意 KEY_* 按键名 (不依赖字段位置)
-        choice=$(getevent -qlc 1 2>/dev/null | sed -n 's/.*\(KEY_[A-Z0-9]*\).*/\1/p' | head -n 1)
-        sleep 0.2
-    done
-    case $choice in
-        KEY_POWER)
+    if command -v getevent >/dev/null 2>&1; then
+        tmpf="${TMPDIR:-/data/local/tmp}/fuyun_key_confirm.txt"
+        rm -f "$tmpf"
+        getevent -qlc 20 >"$tmpf" 2>/dev/null &
+        gpid=$!
+        waited=0
+        while [ "$waited" -lt 20 ]; do
+            # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止误判
+            grep -qE 'KEY_VOLUME(UP|DOWN).*DOWN' "$tmpf" 2>/dev/null && break
+            kill -0 "$gpid" 2>/dev/null || break
+            sleep 0.5
+            waited=$((waited + 1))
+        done
+        kill "$gpid" 2>/dev/null
+        choice=$(awk '/KEY_VOLUMEDOWN/ && /DOWN/ { print "KEY_VOLUMEDOWN"; exit } /KEY_VOLUMEUP/ && /DOWN/ { print "KEY_VOLUMEUP"; exit }' "$tmpf" 2>/dev/null)
+        rm -f "$tmpf"
+    fi
+    case "$choice" in
+        KEY_POWER|KEY_VOLUMEDOWN)
             echo "你取消了安装"
             exit 1
             ;;
-        KEY_VOLUMEDOWN)
-            echo "你取消了安装"
-            exit 1
-            ;;
-        KEY_VOLUMEUP)
+        *)
+            # 无按键(超时)/getevent 不可用/其他按键/KEY_VOLUMEUP 均继续安装,
+            # 确保 install_uperf 一定被执行 (旧逻辑遇杂散按键会静默跳过)
             echo "开始安装"
             install_uperf
             choose_screen_saver
             sleep 0.5
             echo "安装成功"
-    ;;
+            ;;
     esac
 fi
 

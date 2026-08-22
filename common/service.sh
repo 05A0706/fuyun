@@ -17,6 +17,25 @@
 
 BASEDIR="$(dirname $(readlink -f "$0"))"
 
+# 初始化兜底: 覆盖未执行 setup.sh 的安装方式 (手动解压 zip 到模块目录/其他管理器等)
+# 检测到关键配置缺失时, 后台静默补跑 setup.sh --silent:
+#   不覆盖用户已有配置、不弹音量键交互、自动补齐权限 (busybox/cgi-bin 等)
+if [ ! -f /sdcard/Android/yc/uperf/uperf.json ]; then
+    (
+        i=0
+        while [ "$i" -lt 90 ]; do
+            mkdir -p /sdcard/Android/yc/uperf 2>/dev/null
+            if : >/sdcard/Android/yc/uperf/.init_test 2>/dev/null; then
+                rm -f /sdcard/Android/yc/uperf/.init_test
+                break
+            fi
+            sleep 2
+            i=$((i + 1))
+        done
+        sh "$BASEDIR/script/setup.sh" --silent >/dev/null 2>&1
+    ) &
+fi
+
 # 抓取开机崩溃日志, 只终止自己启动的 logcat 实例
 crash_recuser() {
     rm -f "$BASEDIR/logcat.log"

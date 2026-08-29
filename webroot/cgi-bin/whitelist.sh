@@ -1,48 +1,43 @@
 #!/system/bin/sh
-# whitelist.sh - 管理 mem_whitelist.txt 回收白名单
+# whitelist.sh - 管理回收白名单 (whitelist.txt [mem] 分区)
 # 用法: whitelist.sh?action=list
 #       whitelist.sh?action=add&pkg=com.xxx (支持 com.xxx.* 前缀)
 #       whitelist.sh?action=del&pkg=com.xxx
 . "$(dirname "$0")/lib.sh"
+require_token
 
 ACTION=$(qget action)
 PKG=$(qget pkg)
-
-# sed 模式字面量转义: 白名单支持 com.xxx.* 通配, 防止 . * 被当作正则元字符
-sed_escape() {
-    echo "$1" | sed 's/\./\\./g; s/\*/\\*/g; s/\[/\\[/g; s/\]/\\]/g; s/\^/\\^/g; s/\$/\\$/g; s#/#\\/#g'
-}
 
 case "$ACTION" in
 list)
     json_headers
     printf '{"ok":true,"items":['
     first=1
-    if [ -f "$WL" ]; then
-        while read -r p; do
-            case "$p" in ""|\#*) continue ;; esac
-            [ "$first" = "1" ] || printf ','
-            printf '{"pkg":"%s"}' "$p"
-            first=0
-        done <"$WL"
-    fi
+    while read -r p; do
+        # 去掉行内注释和首尾空白
+        p=$(printf '%s' "$p" | sed 's/#.*//' | xargs)
+        [ -n "$p" ] || continue
+        [ "$first" = "1" ] || printf ','
+        printf '{"pkg":"%s"}' "$(json_escape "$p")"
+        first=0
+    done <<EOF
+$(section_body "$WL" mem)
+EOF
     printf ']}\n'
     ;;
 add)
-    [ -n "$PKG" ] || { json_err "missing pkg"; exit 0; }
-    echo "$PKG" | grep -qE '^[a-zA-Z0-9_.]+(\*)?$' || { json_err "invalid pkg"; exit 0; }
-    esc=$(sed_escape "$PKG")
-    [ -f "$WL" ] && sed -i "/^$esc$/d" "$WL"
-    echo "$PKG" >>"$WL"
-    json_ok "added $PKG"
+    [ -n "$PKG" ] || { json_err "缺少包名"; exit 0; }
+    valid_pkg_prefix "$PKG" || { json_err "无效的包名"; exit 0; }
+    add_section_line "$WL" mem "$PKG"
+    json_ok "已添加 $PKG"
     ;;
 del)
-    [ -n "$PKG" ] || { json_err "missing pkg"; exit 0; }
-    esc=$(sed_escape "$PKG")
-    [ -f "$WL" ] && sed -i "/^$esc$/d" "$WL"
-    json_ok "removed $PKG"
+    [ -n "$PKG" ] || { json_err "缺少包名"; exit 0; }
+    del_section_line "$WL" mem "$PKG"
+    json_ok "已移除 $PKG"
     ;;
 *)
-    json_err "unknown action: $ACTION"
+    json_err "未知操作: $ACTION"
     ;;
 esac

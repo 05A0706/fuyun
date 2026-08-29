@@ -418,14 +418,18 @@
         },
         {
           "name": "games_mihoyo",
-          "regex": "com.miHoYo.Yuanshen|com.miHoYo.GenshinImpact|com.miHoYo.hkrpg",
+          "regex": "com.miHoYo.Yuanshen|com.miHoYo.GenshinImpact|com.miHoYo.hkrpg|com.miHoYo.hkrpgoverseas|com.miHoYo.nap|com.miHoYo.ZenlessZoneZero|com.miHoYo.bh3|com.miHoYo.bh3global",
           "pinned": true,
           "rules": [
             {
-              "k": "(RenderThread|GameThread|VulkanRenderThread)",
+              "k": "^(RenderThread|GameThread|VulkanRenderThread)",
               "ac": "core4-6",
               "pc": "gtmain",
-              "vulkan_opt": true
+              "vulkan_opt": true,
+              "dynamic_boost": {
+                "duration": 1200,
+                "freq_boost": "+30%"
+              }
             },
             {
               "k": "/MAIN_THREAD/",
@@ -433,12 +437,17 @@
               "pc": "ui"
             },
             {
-              "k": "(Job.Worker|NativeThread)",
+              "k": "^UnityMain",
+              "ac": "core6-7",
+              "pc": "ui"
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
               "ac": "core0-3",
               "pc": "bg"
             },
             {
-              "k": "(AudioThread|DecoderThread)",
+              "k": "^(AudioTrack|AudioThread|DecoderThread)",
               "ac": "core0-3",
               "pc": "bg"
             }
@@ -446,26 +455,65 @@
         },
         {
           "name": "games_netease",
-          "regex": "com.netease.sky|com.netease.dwrg|com.netease.dwrg.huawei",
-          "pinned": false,
+          "regex": "com.netease.sky|com.netease.dwrg|com.netease.dwrg.huawei|com.netease.egg|com.netease.identity|com.thatgamecompany.sky|com.netease.raiders|com.netease.naraka|com.netease.yjwj|com.netease.onmyoji|com.netease.mhxy",
+          "pinned": true,
           "rules": [
             {
               "k": "/MAIN_THREAD/",
-              "ac": "gtmain",
-              "pc": "gtmain"
-            },
-            {
-              "k": "(RenderThread|GLThread)",
               "ac": "core4-6",
               "pc": "ui"
             },
             {
-              "k": "(Job.Worker|NativeThread)",
-              "ac": "core4-5",
+              "k": "^(UnityMain|RenderThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 800,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core0-3",
               "pc": "bg"
             },
             {
-              "k": "(AudioThread|DecoderThread)",
+              "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
+              "ac": "core0-3",
+              "pc": "bg"
+            }
+          ]
+        },
+        {
+          "name": "games_ue",
+          "regex": "com.tencent.tmgp.pubgmhd|com.tencent.tmgp.pubgmhdf|com.tencent.ig|com.perfectworld.toweroffantasy|com.tencent.dfg",
+          "pinned": true,
+          "rules": [
+            {
+              "k": "/MAIN_THREAD/",
+              "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(GameThread|RenderThread|RHIThread)",
+              "ac": "core6-7",
+              "pc": "gtmain",
+              "dynamic_boost": {
+                "duration": 1000,
+                "freq_boost": "+30%"
+              }
+            },
+            {
+              "k": "^(WorkerThread|TaskGraph|StatsThread)",
+              "ac": "core0-3",
+              "pc": "bg"
+            },
+            {
+              "k": "^(AudioThread|DecoderThread|NetworkThread|OkHttp)",
               "ac": "core0-3",
               "pc": "bg"
             }
@@ -473,26 +521,34 @@
         },
         {
           "name": "games_tencent",
-          "regex": "com.tencent.tmgp.sgamece|com.tencent.tmgp.sgame|com.tencent.tmgp.c|com.tencent.tmgp.pubgmhdf",
-          "pinned": false,
+          "regex": "com.tencent.tmgp.sgamece|com.tencent.tmgp.sgame|com.tencent.tmgp.c|com.tencent.lolm|com.tencent.lolmchess|com.tencent.tmgp.speed|com.tencent.tmgp.hyrz|com.tencent.ymzx|com.tencent.honorofkings|com.riotgames.league.wildrift",
+          "pinned": true,
           "rules": [
             {
               "k": "/MAIN_THREAD/",
-              "ac": "norm",
-              "pc": "norm"
-            },
-            {
-              "k": "(UnityMain|RenderThread|GameThread)",
-              "ac": "core6-7",
-              "pc": "ui"
-            },
-            {
-              "k": "(Job.Worker|NativeThread)",
               "ac": "core4-6",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 600,
+                "freq_boost": "+20%"
+              }
+            },
+            {
+              "k": "^(UnityMain|RenderThread|GameThread|GLThread|VulkanRenderThread)",
+              "ac": "core6-7",
+              "pc": "ui",
+              "dynamic_boost": {
+                "duration": 800,
+                "freq_boost": "+25%"
+              }
+            },
+            {
+              "k": "^(Job.Worker|Worker Thread|NativeThread)",
+              "ac": "core4-5",
               "pc": "bg"
             },
             {
-              "k": "(AudioThread|DecoderThread)",
+              "k": "^(AudioTrack|AudioThread|DecoderThread|NetworkThread|OkHttp)",
               "ac": "core0-3",
               "pc": "bg"
             }

@@ -70,67 +70,21 @@ install_uperf() {
     mkdir -p "$USER_PATH"
     [ -f "$USER_PATH/uperf.json" ] && mv -f "$USER_PATH/uperf.json" "$USER_PATH/uperf.json.bak"
     cp -f "$MODULE_PATH/config/$cfgname.json" "$USER_PATH/uperf.json"
+    # 主配置 (fuyun.conf 三合一) 与白名单 (whitelist.txt 三合一) 首次安装复制
+    [ ! -e $USER_PATH/fuyun.conf ] && cp $MODULE_PATH/config/fuyun.conf $USER_PATH/fuyun.conf
+    [ ! -e $USER_PATH/whitelist.txt ] && cp $MODULE_PATH/config/whitelist.txt $USER_PATH/whitelist.txt
     [ ! -e $USER_PATH/perapp_powermode.txt ] && cp $MODULE_PATH/config/perapp_powermode.txt $USER_PATH/perapp_powermode.txt
-    [ ! -e $USER_PATH/mem_config.txt ] && cp $MODULE_PATH/config/mem_config.txt $USER_PATH/mem_config.txt
-    [ ! -e $USER_PATH/mem_whitelist.txt ] && cp $MODULE_PATH/config/mem_whitelist.txt $USER_PATH/mem_whitelist.txt
     [ ! -e $USER_PATH/mem_apps.txt ] && cp $MODULE_PATH/config/mem_apps.txt $USER_PATH/mem_apps.txt
-    [ ! -e $USER_PATH/idle_gov.txt ] && cp $MODULE_PATH/config/idle_gov.txt $USER_PATH/idle_gov.txt
-    [ ! -e $USER_PATH/idle_whitelist.txt ] && cp $MODULE_PATH/config/idle_whitelist.txt $USER_PATH/idle_whitelist.txt
-    [ ! -e $USER_PATH/freq_limit.txt ] && cp $MODULE_PATH/config/freq_limit.txt $USER_PATH/freq_limit.txt
-    [ ! -e $USER_PATH/freq_range.txt ] && cp $MODULE_PATH/config/freq_range.txt $USER_PATH/freq_range.txt
     rm -rf $MODULE_PATH/config
 
     set_perm_recursive $BIN_PATH 0 0 0755 0755 u:object_r:system_file:s0
 }
 
-# 息屏省电策略选择 (安装时询问; 升级时保留用户已有选择; 可事后改 screen_saver.txt)
-# 说明: 息屏只压 CPU 频率 (关大核+800MHz), 不干预应用 (无 force-idle/省电模式)
-choose_screen_saver() {
-    [ -f "$USER_PATH/screen_saver.txt" ] && return 0 # 升级保留用户选择
-    local choice= tmpf gpid waited
-    echo "---"
-    echo "息屏省电压频 (不杀应用, 息屏关大核+800MHz):"
-    echo "  音量上 = 开启 (推荐, 墓碑冻结应用+本模块压频)"
-    echo "  音量下 = 关闭 (息屏完全交给系统/墓碑)"
-    echo "  10 秒无按键默认开启"
-    if [ "$KSU" = "true" ]; then
-        echo "KernelSU 环境, 默认开启"
-        echo "SCREEN_SAVER=1" >"$USER_PATH/screen_saver.txt"
-        return 0
-    fi
-    # getevent 阻塞式等待按键: 放后台 + 主循环限时 10 秒, 超时默认开启
-    # (直接轮询时间戳会因 getevent 阻塞而永远轮不到; getevent 失败也会走超时兜底)
-    tmpf="${TMPDIR:-/data/local/tmp}/fuyun_key.txt"
-    rm -f "$tmpf"
-    getevent -qlc 1 >"$tmpf" 2>/dev/null &
-    gpid=$!
-    waited=0
-    while kill -0 "$gpid" 2>/dev/null && [ "$waited" -lt 10 ]; do
-        sleep 1
-        waited=$((waited + 1))
-    done
-    if kill -0 "$gpid" 2>/dev/null; then
-        kill "$gpid" 2>/dev/null
-        choice=""
-    else
-        # 只认按下事件 (DOWN), 过滤抬手 (UP) 防止把刚按过音量上的抬起误当选择
-        choice=$(awk '{ print $3, $4 }' "$tmpf" | grep 'KEY_' | awk '$2 == "DOWN" || $2 == "" { print $1 }')
-    fi
-    rm -f "$tmpf"
-    case "$choice" in
-        KEY_VOLUMEDOWN)
-            echo "息屏压频: 关闭"
-            echo "SCREEN_SAVER=0" >"$USER_PATH/screen_saver.txt"
-            ;;
-        *)
-            echo "息屏压频: 开启"
-            echo "SCREEN_SAVER=1" >"$USER_PATH/screen_saver.txt"
-            ;;
-    esac
-}
+# 息屏省电策略选择 (choose_screen_saver) 已删除: 旧版息屏压频接口无对应功能,
+# 关核改由 fuyun.conf [corectl] 用户配置驱动 (见 script/corectl.sh)。
 ## fuck OpenGL!
 echo --- ---- --- --- --- --- --- --- ---
-echo "浮云 26w34.5-B"
+echo "浮云新调度，新的开始 —— fuyun 0.2-rc1"
 sleep 1
 echo "此调度四改自yc9559、李诗雅和NekoNemo"
 sleep 1
@@ -147,49 +101,55 @@ echo "认真看更新日志"
 echo "认真看更新日志"
 echo "--- ---- --- --- --- --- --- --- ---"
 sleep 0.2
-echo "更新日志"
-echo "新增 Vulkan 音量键切换
-Magisk 模块 Action 中监听音量键：音量上 = 开启 Vulkan，音量下 = 还原 OpenGL
-状态持久化到/data/adb/uperf/vulkan.state，开机由post-fs-data.sh按状态应用
-还原 OpenGL 时同时关闭ro.hwui.use_vulkan/debug.renderengine.vulkan/debug.renderengine.graphite等 Vulkan 属性
+echo "更新日志 —— 0.2-rc1 (里程碑)"
+echo "【核心变更】告别频率压制，拥抱核心开关
+- 移除全部频率压制: 删除 freq_limit.sh 及其配置, 不再绑载冻结限制 CPU 频率
+- 新增核心开关(热插拔关核): corectl.sh 守护, 常态关大/中核、息屏额外关核、
+  深度空闲联动关核; 安全约束: 绝不关 cpu0、小核始终在线、大/中核可整簇关闭
 
-memctl 主动压入 zram + 清理
-新增RAM_RECLAIM/ZRAM_RECLAIM_SIZE/ZRAM_IDLE_MIN配置
-对空闲后台进程尝试 cgroup v2 anon 回收，把匿名内存换出到 zram，进程保活
-沿用last_used判定空闲，避免频繁压制
-杀进程后可选触发pm trim-caches清理系统缓存（CLEAN_CACHE_AFTER_KILL/TRIM_CACHE_SIZE）
+【模块化与架构优化】
+- 辅助调速器独立成模块 auxgov.sh: 深度空闲联动关核, 退出自动恢复,
+  修复深度参数残留(用户改过 uperf.json 也正确合并)
+- 内存管理精简: memctl.sh 1000→637 行, am kill 替代 kill -9,
+  支持 IDLE_KILL_MIN=0 跳过闲置计算, 回收即时响应
+- 看门狗与日志拆分: 异常退出自动拉起, corectl/auxgov 日志独立轮转
 
+【配置体系大升级】
+- 配置文件合并 11→7: fuyun.conf([mem]/[idle_gov]/[corectl]) +
+  whitelist.txt([mem]/[idle_gov]/[doze]), 旧文件自动迁移(.legacy 可回退)
+- Ordinary/Expert 分级: 默认只显示高频项, 低频项折叠进专家区
+- 配置预设: 均衡默认/日常省电/游戏性能/极速 一键应用, 支持自定义预设
+- 统一配置校验与原子写入: 写前自动 .bak, uperf.json 括号平衡校验
 
-新增 CPU 频率范围（小/中/大核 min/max 可调）
-WebUI 新增「CPU 频率范围」独立界面：分别设置小核 / 中核 / 大核的频率下限与上限，0=动态，min=max=锁频
-内置 8+ Gen1 / 8 Gen2 支持频点表，下拉框只显示当前 SoC 合法频点，非法值自动拒绝并记录日志
-扩展freq_limit.sh为统一频率控制服务：全局上限与分簇 min/max 共用一套 bind-mount 掩码，避免互相覆盖
-自动识别 policy 属于小核/中核/大核，按簇应用scaling_min_freq/scaling_max_freq
-配置：/sdcard/Android/yc/uperf/freq_range.txt
+【插件系统全面强化】
+- WebUI 插件管理器: 列表/启停/删除/看日志, 插件目录迁移 root-only
+- 配置插件(特调化): uperf.<名称>.json 一键应用(自动备份+重启 uperf)
+- 内置示例插件演示阶段与环境变量
 
+【机型特调扩充】
+- 新增 8 Gen3(sdm8g3)/8 Elite(sdm8e)/8s Elite(sdm8e5),
+  更新 sdm8+/sdm8g2 为资料版(games_moba/dynamic_boost 等)
 
-新增第三方插件接口
-插件目录/sdcard/Android/yc/uperf/plugins/，放置.sh或者.json插件即可
-调用阶段apply（频率控制应用后）、clear（清除后）、boot（开机服务就绪后）
-环境变量FUYUN_STAGE/FUYUN_SOC/FUYUN_MODULE_DIR/FUYUN_USER_PATH/FUYUN_PLUGIN_DIR
-插件输出记录到plugin.log，插件失败不影响模块主功能
+【WebUI 功能与体验】
+- 实时运行曲线(F4): Canvas 绘制大/中/小核频率+内存+温度
+- 配置导入/导出与一键备份(F3): 带版本号 tar.gz, 防路径穿越
+- 场景自动化规则引擎(F2): 充电/电量/时段/屏幕触发
+- 重启 uperf 按钮/Vulkan 状态展示/分应用性能模式/日志增强/版本显示
+- 安全加固: WebUI 令牌认证, 插件 command 直通取消, 路径逃逸校验
 
-
-插件支持 JSON 导入
-plugins/目录除了.sh，现在支持.json描述插件
-JSON 支持name/enabled/stages/command/file字段
-直接把 JSON 文件放进plugins/即自动导入生效"
+【修复与细节】
+- 卸载残留/路径硬编码/CGI 校验与守护对齐/备份导入防御/健壮性提升/
+  公共函数抽取/命名统一/文档文案清理"
 echo "--- ---- --- --- --- --- --- --- ---"
 # KernelSU 安装无终端按键环境 (getevent 拿不到按键会死循环), 直接安装
 if [ "$KSU" = "true" ]; then
     echo "KernelSU 环境, 跳过按键确认"
     install_uperf
-    choose_screen_saver
 else
-    echo "这是一个beta更新 稳定性未知，请谨慎安装"
+    echo "0.2-rc1 里程碑版本, 配置体系有破坏性变更(旧文件会自动迁移)"
     echo "按音量上继续 音量下退出"
     choice=
-    while [ $choice =  ]; do
+    while [ -z "$choice" ]; do
            choice=$(getevent -qlc 1 2>/dev/null | awk '{ print $3 }' | grep 'KEY_')
           sleep 0.2
     done
@@ -205,7 +165,6 @@ else
         KEY_VOLUMEUP)
             echo "开始安装"
             install_uperf
-            choose_screen_saver
             sleep 0.5
             echo "安装成功"
     ;;
@@ -233,7 +192,12 @@ echo " "
 fi
 echo " "
 echo " - 检查安卓版本..."
-[ $(getprop ro.system.build.version.sdk) -lt 29 ] && echo "! Unsupported android version detected, please upgrade." && abort
+SDKV=$(getprop ro.system.build.version.sdk)
+case "$SDKV" in ''|*[!0-9]*) SDKV=$(getprop ro.build.version.sdk) ;; esac
+case "$SDKV" in
+    ''|*[!0-9]*) abort "! Cannot read Android SDK version." ;;
+    *) [ "$SDKV" -lt 29 ] && echo "! Unsupported android version detected (API $SDKV), please upgrade." && abort "! Android API level too low." ;;
+esac
 echo " - 添加Vulkan完成"
 echo " "
 echo "窝补药补习啊！"

@@ -22,6 +22,7 @@ BASEDIR="$(dirname $(readlink -f "$0"))"
 . $BASEDIR/libcommon.sh
 . $BASEDIR/libpowercfg.sh
 . $BASEDIR/libcgroup.sh
+. $BASEDIR/libsysinfo.sh
 
 unify_cgroup() {
     # clear top-app
@@ -29,8 +30,8 @@ unify_cgroup() {
         echo $p >/dev/cpuset/foreground/tasks
     done
 
-    # unused
-    rmdir /dev/cpuset/foreground/boost
+    # unused (目录可能不存在, 静默忽略)
+    rmdir /dev/cpuset/foreground/boost 2>/dev/null
 
     # work with uperf/ContextScheduler
     change_task_cgroup "surfaceflinger" "" "cpuset"
@@ -242,20 +243,16 @@ disable_userspace_boost
 restart_userspace_boost
 
 # unify value
+# 第二组是**有意**的二次加固, 不要删: restart_userspace_boost 会把 perfhal / perfd /
+# vendor.power-hal-* 重新拉起, 这些服务启动时会把自己的 boost 值写回内核节点,
+# 覆盖掉第一组的设置。必须等服务重启完再压一遍, 否则厂商 boost 会残留。
+# (这里只清理了原先重复的 source —— 文件头已 source 过全部库, 重复 source 是纯浪费,
+#  且会让库里任何可变状态被静默重置。)
 disable_kernel_boost
 disable_hotplug
 unify_sched
 unify_devfreq
 unify_lpm
-
-
-BASEDIR="$(dirname "$(readlink -f "$0")")"
-. "$BASEDIR"/pathinfo.sh
-. "$BASEDIR"/libcommon.sh
-. "$BASEDIR"/libpowercfg.sh
-. "$BASEDIR"/libcgroup.sh
-. "$BASEDIR"/libsysinfo.sh
-
 
 if [ "$(is_mtk)" = "true" ]; then
    

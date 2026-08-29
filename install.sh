@@ -112,6 +112,9 @@ on_install() {
     # use universal setup.sh
     sh $MODPATH/script/setup.sh
     [ "$?" != "0" ] && abort
+
+    ui_print "- 插件目录已迁至 root-only /data/adb/uperf/plugins"
+    ui_print "- 旧 /sdcard/Android/yc/uperf/plugins 不再自动加载 (F6 安全加固)"
 }
 
 # Only some special files require specific permissions

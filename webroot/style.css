@@ -1,138 +1,400 @@
-/* fuyun WebUI - 暗色主题 */
+/* ============================================================
+   fuyun WebUI — Liquid Glass 夜间模式
+   视觉参数逐项移植自 Kyant0/AndroidLiquidGlass 组件源码:
+   - LiquidBottomTabs: 容器胶囊 64dp / vibrancy+blur(8dp)+lens(24dp,24dp)
+     容器表面 #121212@40%; 指示器胶囊 56dp / lens(10dp,14dp)+色差
+     白10%表面, 内阴影8dp, 图标按压 scale 1.2
+   - LiquidSlider: 轨道 6dp 胶囊 #787880@36%; 拇指 40x24dp 白色胶囊
+     未按: 白面+blur(8dp); 按压: 透明玻璃+lens(10dp,14dp)+色差+内阴影4dp
+     pressedScale 1.5; 速度拉伸 (scaleX 拉长/scaleY 压扁)
+   - 强调色: 夜间 #0091FF
+   ============================================================ */
 :root {
-  --bg: #0f1117;
-  --card: #1a1d27;
-  --border: #2a2f3d;
-  --text: #e6e8ee;
-  --dim: #8b93a7;
-  --accent: #4f8cff;
-  --green: #35c46a;
-  --red: #ff5c5c;
-  --orange: #ffb347;
+  --bg: #070a16;
+  --text: #eef1ff;
+  --dim: #9aa5c4;
+  --accent: #0091ff;          /* LiquidBottomTabs/LiquidSlider 夜间强调色 */
+  --accent-soft: rgba(0, 145, 255, .4);
+  --green: #34d399;
+  --red: #fb7185;
+  --orange: #fbbf24;
+  --glass-bg: rgba(255, 255, 255, .07);
+  --glass-bg-light: rgba(255, 255, 255, .10);
+  --glass-border: rgba(255, 255, 255, .16);
+  --glass-highlight: rgba(255, 255, 255, .35);
+  --blur-card: blur(20px) saturate(1.5);   /* vibrancy() = saturation x1.5 */
+  --ease-spring: cubic-bezier(.3, 1.3, .45, 1);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-  padding-bottom: 40px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
 }
-header {
+@supports not (backdrop-filter: blur(1px)) {
+  :root { --glass-bg: rgba(16, 20, 38, .96); --glass-bg-light: rgba(255, 255, 255, .08); }
+}
+
+/* ---------- 夜间极光背景 (backdrop 的"底片") ---------- */
+.aurora {
+  position: fixed; z-index: -1; border-radius: 50%;
+  filter: blur(52px); pointer-events: none;
+  will-change: transform;
+}
+.a1 {
+  width: 62vmax; height: 62vmax; left: -18vmax; top: -22vmax;
+  background: radial-gradient(circle at 38% 38%, rgba(0, 100, 255, .6), transparent 64%);
+  animation: drift1 26s ease-in-out infinite alternate;
+}
+.a2 {
+  width: 56vmax; height: 56vmax; right: -20vmax; top: 6vh;
+  background: radial-gradient(circle at 58% 42%, rgba(124, 58, 237, .55), transparent 62%);
+  animation: drift2 34s ease-in-out infinite alternate;
+}
+.a3 {
+  width: 72vmax; height: 44vmax; left: 8vw; bottom: -26vmax;
+  background: radial-gradient(circle at 50% 50%, rgba(6, 182, 212, .45) 0%, rgba(219, 39, 119, .30) 46%, transparent 70%);
+  animation: drift3 40s ease-in-out infinite alternate;
+}
+@keyframes drift1 { to { transform: translate(7vw, 5vh) scale(1.18); } }
+@keyframes drift2 { to { transform: translate(-6vw, 7vh) scale(1.12); } }
+@keyframes drift3 { to { transform: translate(5vw, -6vh) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) {
+  .aurora { animation: none; }
+}
+
+/* ---------- 玻璃顶栏 ---------- */
+header.glass-header {
+  position: sticky; top: 0; z-index: 50;
   display: flex; align-items: center; gap: 12px;
-  padding: 18px 20px;
-  background: linear-gradient(135deg, #1c2a4a, #1a1d27);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 10;
+  padding: 14px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--blur-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 6px 24px rgba(2, 6, 23, .5);
 }
-header h1 { font-size: 20px; }
+header h1 { font-size: 20px; letter-spacing: .5px; }
 header .sub { color: var(--dim); font-size: 12px; flex: 1; }
-main { max-width: 720px; margin: 16px auto; padding: 0 14px; display: flex; flex-direction: column; gap: 14px; }
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+
+main { max-width: 720px; margin: 16px auto; padding: 0 14px; }
+
+/* ---------- 页面切换动画 ---------- */
+.page { display: none; }
+.page.active {
+  display: flex; flex-direction: column; gap: 14px;
+  animation: pageIn .32s var(--ease-spring);
 }
-.card h2 { font-size: 14px; color: var(--accent); margin-bottom: 12px; letter-spacing: 1px; }
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 玻璃卡片 ---------- */
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--blur-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow:
+    0 10px 32px rgba(2, 6, 23, .5),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -1px 0 rgba(255, 255, 255, .06);
+}
+.card h2 {
+  font-size: 14px; color: var(--accent);
+  margin-bottom: 12px; letter-spacing: 1px;
+  display: flex; align-items: center; gap: 8px;
+}
+
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid2 .wide { grid-column: 1 / -1; }
 .stat label { display: block; color: var(--dim); font-size: 11px; margin-bottom: 4px; }
 .stat span { font-size: 15px; font-weight: 600; }
 .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px !important; word-break: break-all; }
 .small { font-size: 12px !important; font-weight: 400 !important; }
+
 .badge {
   padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid transparent;
 }
-.badge.ok { background: rgba(53,196,106,.15); color: var(--green); }
-.badge.bad { background: rgba(255,92,92,.15); color: var(--red); }
-.badge.na { background: rgba(139,147,167,.15); color: var(--dim); }
+.badge.ok { background: rgba(52, 211, 153, .16); color: var(--green); border-color: rgba(52, 211, 153, .35); }
+.badge.bad { background: rgba(251, 113, 133, .16); color: var(--red); border-color: rgba(251, 113, 133, .35); }
+.badge.na { background: rgba(154, 165, 196, .14); color: var(--dim); border-color: rgba(154, 165, 196, .3); }
+
+/* ---------- 性能模式按钮 ---------- */
 .modebtns { display: flex; gap: 8px; flex-wrap: wrap; }
 .mode {
-  flex: 1; min-width: 70px; padding: 10px 0;
-  background: #232838; color: var(--text);
-  border: 1px solid var(--border); border-radius: 8px;
+  flex: 1; min-width: 70px; padding: 11px 0;
+  background: var(--glass-bg-light); color: var(--text);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border); border-radius: 999px;
   font-size: 14px; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+  transition: transform .25s var(--ease-spring), background .2s, border-color .2s;
 }
-.mode.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.mode:active { transform: scale(.94); }
+.mode.active {
+  background: linear-gradient(160deg, rgba(0, 145, 255, .8), rgba(0, 110, 220, .55));
+  border-color: rgba(120, 190, 255, .6); color: #fff; font-weight: 700;
+  box-shadow: 0 6px 20px rgba(0, 145, 255, .4), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+
 .hint { color: var(--dim); font-size: 11px; margin-top: 8px; }
-.form { display: flex; flex-direction: column; gap: 10px; }
+.form { display: flex; flex-direction: column; gap: 12px; }
 .form.inline { flex-direction: row; flex-wrap: wrap; align-items: center; }
 .row { display: flex; align-items: center; gap: 10px; }
-.row label { width: 130px; color: var(--dim); font-size: 12px; flex-shrink: 0; }
+.row label { width: 118px; color: var(--dim); font-size: 12px; flex-shrink: 0; }
 .row input, .row select, .form.inline input, .form.inline select {
   flex: 1; min-width: 120px;
-  background: #14161f; color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 8px 10px; font-size: 13px;
+  background: rgba(255, 255, 255, .07); color: var(--text);
+  border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 9px 11px; font-size: 13px;
+  transition: border-color .2s;
 }
-.row .hint { margin: 0; }
+.row input::placeholder { color: rgba(154, 165, 196, .55); }
+.row input:focus, .row select:focus { outline: none; border-color: var(--accent-soft); }
+.row select option { background: #12172b; color: var(--text); }
+.row .hint { margin: 0; flex-shrink: 1; }
 .inline2 { display: flex; align-items: center; gap: 6px; flex: 1; }
 .inline2 select { flex: 1; min-width: 80px; }
 .inline2 span { color: var(--dim); font-size: 12px; }
-.btn {
-  background: var(--accent); color: #fff; border: none;
-  border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer;
+
+/* ============================================================
+   Glass Slider — 官方教程实现 (kyant.gitbook.io/backdrop/tutorials/glass-slider)
+   轨道: 6dp 胶囊; 拇指: 56x32dp 全透明玻璃胶囊
+   lens(12dp,16dp)+chromaticAberration, 同时折射轨道与背景 (combined backdrop)
+   按压: 白面浮现 + 内阴影 + scale 1.25 (LiquidSlider); 拖动速度拉伸
+   原生 input 隐形保交互 (拖动/键盘/表单取值), 玻璃层纯视觉
+   ============================================================ */
+.slider-row { gap: 12px; }
+.gslider { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.gs { position: relative; flex: 1; min-width: 0; height: 34px; --pscale: 1; }
+.gs.pressing { --pscale: 1.25; }
+.gs-track {
+  position: absolute; left: 0; right: 0; top: 50%; height: 6px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(120, 120, 128, .36);   /* LiquidSlider trackColor 夜间 */
+  box-shadow: inset 0 1px 2px rgba(2, 6, 23, .4);
 }
-.btn.small { padding: 6px 12px; font-size: 12px; }
-.btn.warn { background: var(--orange); color: #222; }
-.btn:hover { filter: brightness(1.15); }
+.gs-fill {
+  position: absolute; left: 0; top: 50%; height: 6px; width: var(--p, 0%);
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--accent);
+}
+/* 全透明玻璃拇指: 折射身后轨道+极光, 边缘高光勾边 */
+.gs-thumb {
+  position: absolute; top: 50%;
+  left: clamp(28px, var(--pp, 50%), calc(100% - 28px));
+  width: 56px; height: 32px; border-radius: 999px;
+  transform: translate(-50%, -50%) scale(var(--pscale)) scaleX(var(--vs, 1)) scaleY(calc(1 - (var(--vs, 1) - 1) * .35));
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .35);
+  box-shadow:
+    0 4px 12px rgba(2, 6, 23, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .35),
+    inset 0 -1px 0 rgba(255, 255, 255, .06);
+  backdrop-filter: blur(3px) saturate(1.4);        /* 级联回退: url() 不支持时保留 */
+  -webkit-backdrop-filter: blur(3px) saturate(1.4);
+  backdrop-filter: url(#lens-ca) saturate(1.4);    /* 支持则覆盖为带色差的透镜折射 */
+  -webkit-backdrop-filter: url(#lens-ca) saturate(1.4);
+  pointer-events: none;
+  transition: background .25s, box-shadow .25s;
+  will-change: transform;
+}
+@supports not (backdrop-filter: url(#lens-ca)) {
+  .gs-thumb {
+    backdrop-filter: blur(3px) saturate(1.5);
+    -webkit-backdrop-filter: blur(3px) saturate(1.5);
+  }
+}
+/* 按压 (LiquidSlider): 白面浮现 + InnerShadow(4dp) + 光环 */
+.gs.pressing .gs-thumb {
+  background: rgba(255, 255, 255, .22);
+  box-shadow:
+    inset 0 0 8px rgba(2, 6, 23, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    0 6px 16px rgba(2, 6, 23, .45),
+    0 0 0 6px rgba(0, 145, 255, .12);
+}
+/* 隐形原生 input: 保留拖动/点击跳转/键盘方向键/表单取值 */
+.gs input[type="range"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; margin: 0; border: none;
+  cursor: grab; z-index: 3;
+  -webkit-appearance: none; appearance: none; background: transparent;
+}
+.gs input[type="range"]:active { cursor: grabbing; }
+.gval {
+  min-width: 74px; text-align: right; flex-shrink: 0;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px; border-radius: 8px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid var(--glass-border);
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+  background: linear-gradient(160deg, rgba(0, 145, 255, .9), rgba(0, 105, 210, .75));
+  color: #fff; font-weight: 600;
+  border: 1px solid rgba(140, 200, 255, .5);
+  border-radius: 12px; padding: 10px 16px; font-size: 13px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 145, 255, .35), inset 0 1px 0 rgba(255, 255, 255, .4);
+  transition: transform .25s var(--ease-spring), filter .2s;
+}
+.btn.small { padding: 7px 13px; font-size: 12px; }
+.btn.warn {
+  background: linear-gradient(160deg, rgba(251, 191, 36, .9), rgba(244, 114, 60, .75));
+  border-color: rgba(255, 210, 140, .55); color: #2a1604;
+  box-shadow: 0 4px 16px rgba(244, 150, 60, .3), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:active { transform: scale(.94); }
+
+/* ---------- 列表 ---------- */
 .list { list-style: none; margin-top: 10px; }
 .list li {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
   font-size: 13px;
 }
 .list li:last-child { border-bottom: none; }
-.list .pkg { font-family: ui-monospace, Consolas, monospace; }
+.list .pkg { font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+.list .li-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .list .mode-tag {
-  background: rgba(79,140,255,.15); color: var(--accent);
-  padding: 1px 8px; border-radius: 10px; font-size: 11px; margin-right: 8px;
+  background: rgba(0, 145, 255, .16); color: var(--accent);
+  padding: 1px 8px; border-radius: 10px; font-size: 11px;
 }
 .list .del {
   background: none; border: none; color: var(--red);
-  font-size: 15px; cursor: pointer; padding: 2px 6px;
+  font-size: 15px; cursor: pointer; padding: 2px 8px; border-radius: 8px;
+  transition: background .2s;
 }
+.list .del:hover { background: rgba(251, 113, 133, .14); }
+
+/* ---------- 折叠面板 / 编辑器 / 日志 ---------- */
 details {
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
   padding: 10px 12px;
   margin-top: 10px;
-  background: #14161f;
+  background: rgba(255, 255, 255, .045);
 }
-summary {
-  cursor: pointer;
-  color: var(--text);
-  font-size: 13px;
-  user-select: none;
-}
+summary { cursor: pointer; color: var(--text); font-size: 13px; user-select: none; }
 .editor {
-  width: 100%;
-  min-height: 100px;
-  margin-top: 10px;
-  background: #10121a;
-  color: #d7dae2;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  width: 100%; min-height: 100px; margin-top: 10px;
+  background: rgba(3, 6, 18, .65); color: #d9e2ff;
+  border: 1px solid var(--glass-border); border-radius: 10px;
   padding: 10px;
   font-family: ui-monospace, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  resize: vertical;
-  white-space: pre;
+  font-size: 12px; line-height: 1.5;
+  resize: vertical; white-space: pre;
 }
 code {
-  background: #10121a;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 11px;
-  color: #9fd0a5;
+  background: rgba(3, 6, 18, .6);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px; padding: 1px 5px;
+  font-size: 11px; color: #7ee0a2;
 }
 .log {
-  background: #10121a; border: 1px solid var(--border); border-radius: 8px;
+  background: rgba(3, 6, 18, .65);
+  border: 1px solid var(--glass-border); border-radius: 12px;
   padding: 10px; font-size: 11px; line-height: 1.6; max-height: 260px;
   overflow: auto; white-space: pre-wrap; word-break: break-all;
-  margin-top: 10px; color: #9fd0a5;
+  margin-top: 10px; color: #7ee0a2;
 }
 .ok { color: var(--green); font-size: 13px; }
 .hidden { display: none; }
 footer { text-align: center; color: var(--dim); font-size: 11px; margin-top: 20px; }
+
+/* ============================================================
+   Glass Bottom Bar — 参数对应 LiquidBottomTabs.kt
+   容器: 胶囊 64dp 高, padding 4dp, vibrancy+blur(8dp)+lens(24dp,24dp),
+         表面 #121212@40% (夜间)
+   指示器: 独立滑动玻璃胶囊, 高 56dp = 容器高-2x4dp, 白 10% 表面,
+           lens(10dp,14dp)+色差, 内阴影 8dp, 按压 scale
+   ============================================================ */
+nav.glass-bar {
+  position: fixed;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%);
+  display: flex; align-items: stretch;
+  width: min(340px, calc(100vw - 24px));
+  height: 64px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(18, 18, 18, .4);          /* containerColor 夜间 */
+  backdrop-filter: blur(8px) saturate(1.5);  /* vibrancy+blur(8dp) 级联回退 */
+  -webkit-backdrop-filter: blur(8px) saturate(1.5);
+  backdrop-filter: url(#lens) blur(8px) saturate(1.5) brightness(1.12);
+  -webkit-backdrop-filter: url(#lens) blur(8px) saturate(1.5) brightness(1.12);
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow:
+    0 14px 44px rgba(2, 6, 23, .6),
+    0 0 24px rgba(0, 145, 255, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .35),
+    inset 0 -1px 0 rgba(255, 255, 255, .08);
+  z-index: 100;
+}
+
+/* 独立滑动玻璃胶囊指示器 (LiquidBottomTabs 的第三层 Box) */
+.tab-pill {
+  position: absolute;
+  top: 4px; bottom: 4px; left: 4px;
+  width: calc((100% - 8px) / 4);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);       /* 夜间表面 white 10% */
+  backdrop-filter: blur(6px) saturate(1.5);       /* 级联回退 */
+  -webkit-backdrop-filter: blur(6px) saturate(1.5);
+  backdrop-filter: url(#lens-ca) saturate(1.5);   /* lens(10dp,14dp)+色差 */
+  -webkit-backdrop-filter: url(#lens-ca) saturate(1.5);
+  box-shadow:
+    inset 0 0 8px rgba(2, 6, 23, .3),        /* InnerShadow 8dp */
+    inset 0 1px 0 rgba(255, 255, 255, .4),   /* Highlight.Default */
+    inset 0 -1px 0 rgba(255, 255, 255, .08),
+    0 4px 12px rgba(2, 6, 23, .35);          /* Shadow */
+  transform: translateX(var(--tx, 0%)) scale(var(--ps, 1));
+  transition: transform .45s var(--ease-spring);
+  pointer-events: none;
+}
+
+nav.glass-bar .tab {
+  position: relative; z-index: 1;
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-width: 0;
+  background: transparent; color: var(--dim);
+  border: none; border-radius: 999px;
+  font-size: 11px; cursor: pointer;
+  transition: color .25s;
+}
+nav.glass-bar .tab svg {
+  width: 21px; height: 21px;
+  transition: transform .35s var(--ease-spring);
+}
+/* 选中: 图标/文字染色强调色 (对应 ColorFilter.tint(accentColor)), 按压 scale 1.2 */
+nav.glass-bar .tab.active { color: #fff; font-weight: 600; }
+nav.glass-bar .tab.active svg { color: var(--accent); transform: scale(1.15); }
+nav.glass-bar .tab:active svg { transform: scale(1.2); }
+
+/* ---------- 小屏适配 ---------- */
+@media (max-width: 480px) {
+  .row label { width: 96px; font-size: 11px; }
+  .row input, .row select { min-width: 0; }
+  .gval { min-width: 64px; font-size: 11px; }
+  .gs-thumb { width: 44px; height: 27px; }
+  .gs { --thumb-half: 22px; }
+  .gs-thumb { left: clamp(22px, var(--pp, 50%), calc(100% - 22px)); }
+  nav.glass-bar { width: min(320px, calc(100vw - 20px)); }
+  .grid2 { grid-template-columns: 1fr; }
+  main { padding: 0 10px; }
+  .card { padding: 14px; border-radius: 16px; }
+}

@@ -1,6 +1,6 @@
 id=uperf
 name=浮云调度
-version=26w34.6-b
-versionCode=20260822
+version=0.2-rc1
+versionCode=20260829
 author=Matt_Yang&李诗雅&NetizenNemo&05A0706
-description=仅8+和8G2可用版本 反馈酷安@洗碗河没有地铁 默认开启Vulkan并禁用GPU_BOOST
+description=浮云调度 0.2-rc1 里程碑版: 支持 8+Gen1/8Gen2/8Gen3/8Elite/8sElite, 核心开关替代频率压制, 配置合并简化, 插件生态成型. 反馈酷安@洗碗河没有地铁

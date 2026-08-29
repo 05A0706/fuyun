@@ -18,8 +18,11 @@
 MODDIR=${0%/*}
 
 if [ -f "$MODDIR/flag/need_recuser" ]; then
+    # 上次开机没能走到 service.sh (flag 未被清掉), 判定为异常: 禁用模块并请求抓取崩溃日志
     rm -f $MODDIR/flag/need_recuser
     true >$MODDIR/disable
+    # service.sh 的 crash_recuser 见到该标记才会抓 60 秒 logcat
+    true >$MODDIR/flag/need_crashlog
 else
     true >$MODDIR/flag/need_recuser
 fi
@@ -34,7 +37,9 @@ if [ -f "$VULKAN_STATE" ]; then
 fi
 if [ "$VULKAN_ON" = "1" ]; then
     # Enable Vulkan (Credit @tryigitx, SDK<34 需要额外指定渲染后端)
-    if [ "$(getprop ro.build.version.sdk)" -lt 34 ]; then
+    SDKVER=$(getprop ro.build.version.sdk)
+    case "$SDKVER" in ''|*[!0-9]*) SDKVER=0 ;; esac
+    if [ "$SDKVER" -lt 34 ]; then
         resetprop debug.hwui.renderer skiavk
     fi
     resetprop ro.hwui.use_vulkan true
@@ -95,8 +100,13 @@ NET_CONFIGS="/vendor/etc/modem/network_mode.xml
 /product/etc/modem/network_mode.xml
 /system/etc/modem/network_mode.xml"
 
+NET_MODIFIED=0
 for config in $NET_CONFIGS; do
     if [ -f "$config" ]; then
+        # 已是目标值则跳过: 避免每次开机都重写固件分区 (省一次写放大, 也缩短开机耗时)
+        if ! grep -q '<NrMode>0</NrMode>' "$config" && ! grep -q '<NrMode>2</NrMode>' "$config"; then
+            continue
+        fi
         # 确定备份文件名 (按来源路径区分)
         case "$config" in
             */vendor/*)  bf="$BACKUP_DIR/network_mode_vendor.xml" ;;
@@ -111,6 +121,7 @@ for config in $NET_CONFIGS; do
         sed -i 's/<NrMode>2<\/NrMode>/<NrMode>1<\/NrMode>/g' "$TMPDIR/network_mode.xml"
         cp "$TMPDIR/network_mode.xml" "$config"
         chmod 644 "$config"
+        NET_MODIFIED=1
     fi
 done
 
@@ -135,9 +146,9 @@ for slot in 0 1; do
     esac
 done
 
-# 清理工作
+# 清理工作 (只有真的改过文件才 sync)
 rm -rf "$TMPDIR"
-sync
+[ "$NET_MODIFIED" = "1" ] && sync
 
 # 息屏待机
 
@@ -150,11 +161,26 @@ mkdir -p /sdcard/Android/yc/uperf
 chmod 755 /sdcard/Android/yc/uperf
 
 # 初始化白名单文件 (仅首次生成, 不覆盖用户修改过的白名单)
-DOZE_WHITELIST="/sdcard/Android/yc/uperf/doze_whitelist.txt"
+# 26w34.6-B: 三个白名单合并为 whitelist.txt, [doze] 分区由本脚本补默认值
+USER_PATH=/sdcard/Android/yc/uperf
+WHITELIST="$USER_PATH/whitelist.txt"
 
-if [ ! -f "$DOZE_WHITELIST" ]; then
-    # 默认推送应用白名单
-    cat > "$DOZE_WHITELIST" <<EOF
+if [ ! -f "$WHITELIST" ]; then
+    cat >"$WHITELIST" <<'EOF'
+# fuyun 白名单 (whitelist.txt) - 内存回收 / 辅助调速器 / Doze 三合一
+# 分区: [mem] 回收白名单 / [idle_gov] 调速器白名单 / [doze] 息屏 Doze 推送白名单
+# 每行一个包名, # 开头为注释, 重启保留; WebUI 三卡片可视化管理
+[mem]
+[idle_gov]
+EOF
+fi
+
+# [doze] 分区无包名时补默认推送应用白名单 (幂等, 不覆盖用户已添加项)
+has_doze=$(awk -v sec="doze" '$0=="["sec"]"{f=1;next} f&&$0~/^\[/{f=0} f&&/^com\./{n++} END{print n+0}' "$WHITELIST" 2>/dev/null)
+if [ "${has_doze:-0}" = "0" ]; then
+    echo >>"$WHITELIST"
+    echo "[doze]" >>"$WHITELIST"
+    cat >>"$WHITELIST" <<'EOF'
 com.tencent.mm # 微信
 com.tencent.mobileqq # QQ
 com.tencent.tim # Tim
@@ -167,7 +193,7 @@ EOF
 fi
 
 # 设置权限
-chmod 644 "$DOZE_WHITELIST"
+chmod 644 "$WHITELIST"
 
 # 创建初始日志文件
 LOG_FILE="/sdcard/Android/yc/uperf/screen_log.txt"

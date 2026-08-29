@@ -17,10 +17,16 @@ PORT=16800
 PIDFILE="/data/local/tmp/webuid.pid"
 LOGFILE="/data/local/tmp/webuid.log"
 
+# F5: WebUI 访问令牌 (root-only, 由 CGI 的 require_token 校验)
+WEBUI_TOKEN_DIR=/data/adb/uperf
+WEBUI_TOKEN_FILE="$WEBUI_TOKEN_DIR/.webui_token"
+WEBUI_TOKEN_VAL=""
+
 log() { echo "[webuid] $(date '+%m-%d %H:%M:%S') $*" >>"$LOGFILE"; }
 
 port_in_use() {
-    toybox nc -z 127.0.0.1 "$PORT" 2>/dev/null && return 0
+    # 直接探测 HTTP 服务 (不依赖 nc -z: 部分 ROM 的 nc 不支持 -z 会误判端口空闲)
+    toybox wget -q -O /dev/null "http://127.0.0.1:$PORT/" 2>/dev/null && return 0
     return 1
 }
 
@@ -42,6 +48,9 @@ start() {
     port_in_use && { log "port $PORT already in use, skip"; return 0; }
     [ -d "$WEBROOT" ] || { log "webroot missing: $WEBROOT"; return 1; }
 
+    # F5: 生成访问令牌并注入页面 (必须在 httpd 启动前完成)
+    gen_webui_token
+
     case "$(find_httpd)" in
     toybox)
         # toybox httpd: -c 指定 CGI 前缀
@@ -61,14 +70,38 @@ start() {
     echo "$pid" >"$PIDFILE"
     sleep 1
 
-    # 自检: 请求 status API
-    if toybox wget -q -O /dev/null "http://127.0.0.1:$PORT/cgi-bin/status.sh" 2>/dev/null; then
+    # 自检: 请求 status API (带上令牌, 否则会被 require_token 拒绝)
+    if toybox wget -q -O /dev/null "http://127.0.0.1:$PORT/cgi-bin/status.sh?token=$WEBUI_TOKEN_VAL" 2>/dev/null; then
         log "started OK on 127.0.0.1:$PORT (pid $pid)"
     elif port_in_use; then
         log "port in use after start (assume OK)"
     else
         log "httpd self-check FAILED (pid $pid)"
     fi
+}
+
+# F5: 生成 WebUI 令牌 (root-only), 并注入 index.html 供页面携带
+# 注意: 这是纵深防御; 直接回环访问的本地 App 也能从 index.html 读到令牌,
+# 完整修复需 Magisk/KernelSU 管理器在请求外带令牌 (见 lib.sh 注释)。
+gen_webui_token() {
+    mkdir -p "$WEBUI_TOKEN_DIR" 2>/dev/null
+    local t=""
+    if [ -r /dev/urandom ]; then
+        t=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+    fi
+    [ -n "$t" ] || t="$(date +%s%N)$$"
+    echo "$t" >"$WEBUI_TOKEN_FILE"
+    chmod 600 "$WEBUI_TOKEN_FILE" 2>/dev/null
+    chown root:root "$WEBUI_TOKEN_FILE" 2>/dev/null
+    WEBUI_TOKEN_VAL="$t"
+    inject_token_to_page "$t"
+}
+
+# 把令牌幂等写入 index.html 的 const WEBUI_TOKEN = "..."; 行
+inject_token_to_page() {
+    local t="$1" page="$WEBROOT/index.html"
+    [ -f "$page" ] || return 0
+    sed -i "s/const WEBUI_TOKEN *= *\"[^\"]*\";/const WEBUI_TOKEN = \"$t\";/" "$page" 2>/dev/null
 }
 
 stop() {

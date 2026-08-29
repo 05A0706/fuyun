@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>液态玻璃自检</title>
+<style>
+  :root { --ok: #34d399; --bad: #fb7185; --warn: #fbbf24; }
+  * { box-sizing: border-box; }
+  body { background: #070a16; color: #eef1ff; font-family: -apple-system, Roboto, "Noto Sans SC", sans-serif; padding: 16px; line-height: 1.6; }
+  .aurora { position: fixed; z-index: -1; border-radius: 50%; filter: blur(52px); }
+  .a1 { width: 60vmax; height: 60vmax; left: -15vmax; top: -20vmax; background: radial-gradient(circle at 38% 38%, rgba(0,100,255,.6), transparent 64%); animation: d1 20s ease-in-out infinite alternate; }
+  .a2 { width: 50vmax; height: 50vmax; right: -18vmax; top: 10vh; background: radial-gradient(circle at 58% 42%, rgba(124,58,237,.55), transparent 62%); animation: d2 26s ease-in-out infinite alternate; }
+  @keyframes d1 { to { transform: translate(6vw,4vh) scale(1.15); } }
+  @keyframes d2 { to { transform: translate(-5vw,6vh) scale(1.1); } }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { color: #9aa5c4; font-size: 12px; margin-bottom: 16px; }
+  .card { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); border-radius: 14px; padding: 14px; margin-bottom: 14px;
+          backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5); }
+  h2 { font-size: 13px; color: #0091ff; margin-bottom: 8px; }
+  tr td { font-size: 12px; padding: 3px 6px; vertical-align: top; border-bottom: 1px solid rgba(255,255,255,.07); }
+  td:first-child { color: #9aa5c4; white-space: nowrap; }
+  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; } .warn { color: var(--warn); font-weight: 600; }
+  .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sw { width: 120px; height: 84px; border-radius: 16px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; padding-bottom: 6px;
+        border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); }
+  .sw-blur { backdrop-filter: blur(8px) saturate(1.5); -webkit-backdrop-filter: blur(8px) saturate(1.5); }
+  .sw-lens { backdrop-filter: url(#lens) blur(8px) saturate(1.5); -webkit-backdrop-filter: url(#lens) blur(8px) saturate(1.5); }
+  .stripes { position: absolute; inset: 0; }
+  .wrap { position: relative; }
+  a { color: #0091ff; }
+</style>
+</head>
+<body>
+<div class="aurora a1"></div>
+<div class="aurora a2"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="lens" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+    <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+    <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+    <feColorMatrix in="mx" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rx"/>
+    <feColorMatrix in="my" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gy"/>
+    <feComposite in="rx" in2="gy" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="map"/>
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<h1>液态玻璃自检</h1>
+<div class="sub">把本页结果截图反馈，可快速定位"没效果"的原因</div>
+
+<div class="card">
+  <h2>1. 资源版本（判断文件是否已更新到设备）</h2>
+  <table><tbody id="ver"></tbody></table>
+</div>
+
+<div class="card">
+  <h2>2. 能力检测（判断引擎是否支持）</h2>
+  <table><tbody id="caps"></tbody></table>
+</div>
+
+<div class="card">
+  <h2>3. A/B 对比（判断是"没更新"还是"不支持"）</h2>
+  <div class="wrap">
+    <div style="position:relative;height:110px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);
+         background:repeating-linear-gradient(90deg,#ff4d6d 0 12px,#22d3ee 12px 24px,#a78bfa 24px 36px,#facc15 36px 48px);">
+      <div class="swatches" style="position:absolute;inset:14px;gap:10px">
+        <div class="sw sw-blur">纯模糊</div>
+        <div class="sw sw-lens">透镜折射</div>
+        <div class="sw">无滤镜</div>
+      </div>
+    </div>
+  </div>
+  <p class="sub" style="margin-top:10px">三个色块下方是彩色条纹。<br>
+  · 若"无滤镜"已能看穿条纹、另两个看不出区别 → <span class="bad">滤镜未生效（引擎不支持或被降级）</span><br>
+  · 若"纯模糊"条纹变糊、"透镜折射"条纹被弯曲 → <span class="ok">液态玻璃正常工作</span></p>
+</div>
+
+<div class="card">
+  <h2>4. 运行环境</h2>
+  <table><tbody id="env"></tbody></table>
+</div>
+
+<p><a href="index.html">← 返回控制台</a></p>
+
+<script>
+function row(t, k, v, cls) {
+  const tr = document.createElement("tr");
+  const td1 = document.createElement("td"); td1.textContent = k;
+  const td2 = document.createElement("td"); td2.textContent = v; if (cls) td2.className = cls;
+  tr.appendChild(td1); tr.appendChild(td2); t.appendChild(tr);
+}
+(function () {
+  const v = document.getElementById("ver");
+  fetch("style.css?v=" + Date.now(), { cache: "no-store" })
+    .then(r => r.text())
+    .then(txt => {
+      const hasGlass = txt.includes(".gs-thumb");
+      const hasBar = txt.includes(".tab-pill");
+      row(v, "style.css 已加载", "是");
+      row(v, "含 Glass Slider 样式", hasGlass ? "是（文件已更新）" : "否（仍是旧文件！）", hasGlass ? "ok" : "bad");
+      row(v, "含 Glass Bottom Bar 样式", hasBar ? "是（文件已更新）" : "否（仍是旧文件！）", hasBar ? "ok" : "bad");
+      row(v, "CSS 长度", txt.length + " 字节");
+    })
+    .catch(e => row(v, "style.css 加载", "失败: " + e.message, "bad"));
+
+  const c = document.getElementById("caps");
+  const s = (p, val) => CSS.supports(p, val);
+  const items = [
+    ["backdrop-filter: blur()", s("backdrop-filter", "blur(1px)") || s("-webkit-backdrop-filter", "blur(1px)")],
+    ["backdrop-filter: url(#lens) 语法", s("backdrop-filter", "url(#lens)") || s("-webkit-backdrop-filter", "url(#lens)")],
+    ["filter: url() 语法", s("filter", "url(#x)")],
+    ["CSS 变量 clamp/calc", s("width", "clamp(1px, calc(100% - 2px), 9px)")],
+    ["transform scaleX/scaleY", s("transform", "translate(-50%,-50%) scaleX(1.2) scaleY(.9)")],
+  ];
+  items.forEach(([k, ok]) => row(c, k, ok ? "支持" : "不支持", ok ? "ok" : "bad"));
+
+  const e = document.getElementById("env");
+  row(e, "User-Agent", navigator.userAgent);
+  row(e, "内核标识", /Chrome\/(\d+)/.exec(navigator.userAgent) ? "Chromium " + /Chrome\/(\d+)/.exec(navigator.userAgent)[1] : "非 Chromium");
+  row(e, "访问方式", location.protocol + "//" + location.host);
+  row(e, "语言/屏幕", navigator.language + " / " + window.screen.width + "x" + window.screen.height + " dpr=" + window.devicePixelRatio);
+})();
+</script>
+</body>
+</html>

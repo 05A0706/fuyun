@@ -2,344 +2,490 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>fuyun 控制台</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260829b">
 </head>
 <body>
-<header>
+<!-- 液态玻璃透镜折射滤镜: feImage 位移贴图 + feDisplacementMap
+     参数取自 Kyant0/AndroidLiquidGlass 组件源码:
+     底栏 lens(24dp,24dp); 选中胶囊/滑块拇指 lens(10dp,14dp)+chromaticAberration -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="lens" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+      <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+      <!-- 分离通道: mx 取 R (水平位移), my 取 G (垂直位移), 互不干扰 -->
+      <feColorMatrix in="mx" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rx"/>
+      <feColorMatrix in="my" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gy"/>
+      <feComposite in="rx" in2="gy" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 选中胶囊/滑块拇指: lens(10dp,14dp)+chromaticAberration=true
+         色差实现: R/G/B 三通道按不同位移量折射后重新合成 -->
+    <filter id="lens-ca" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+      <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='url(%23g)'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='0.5' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23000000'/%3E%3C/linearGradient%3E%3C/svg%3E"/>
+      <feColorMatrix in="mx" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rx"/>
+      <feColorMatrix in="my" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gy"/>
+      <feComposite in="rx" in2="gy" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="map"/>
+      <!-- 色差: 红 refraction 14dp→scale34, 绿 10dp→scale26, 蓝 8dp→scale20 -->
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="dR"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G" result="dG"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="20" xChannelSelector="R" yChannelSelector="G" result="dB"/>
+      <feColorMatrix in="dR" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chR"/>
+      <feColorMatrix in="dG" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chG"/>
+      <feColorMatrix in="dB" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="chB"/>
+      <feComposite in="chR" in2="chG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="cRG"/>
+      <feComposite in="cRG" in2="chB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- 夜间极光背景: 高饱和光斑, 供毛玻璃模糊/折射, 是液态玻璃效果的"底片" -->
+<div class="aurora a1" aria-hidden="true"></div>
+<div class="aurora a2" aria-hidden="true"></div>
+<div class="aurora a3" aria-hidden="true"></div>
+
+<header class="glass-header">
   <h1>⚡ fuyun</h1>
-  <span class="sub">WebUI 控制台</span>
+  <span class="sub">Liquid Glass 控制台</span>
   <button id="btnRefresh" class="btn small">刷新</button>
 </header>
 
 <main>
-  <!-- 状态卡片 -->
-  <section class="card" id="card-status">
-    <h2>运行状态</h2>
-    <div class="grid2">
-      <div class="stat"><label>uperf</label><span id="st-uperf" class="badge">?</span></div>
-      <div class="stat"><label>memctl</label><span id="st-memctl" class="badge">?</span></div>
-      <div class="stat"><label>可用内存</label><span id="st-mem">-</span></div>
-      <div class="stat"><label>前台应用</label><span id="st-fg" class="mono">-</span></div>
-      <div class="stat"><label>最后日志</label><span id="st-log" class="mono small">-</span></div>
-    </div>
-  </section>
+  <!-- ==================== 状态页 ==================== -->
+  <div class="page active" data-page="home">
+    <section class="card" id="card-status">
+      <h2>运行状态</h2>
+      <div class="grid2">
+        <div class="stat"><label>uperf</label><span id="st-uperf" class="badge">?</span></div>
+        <div class="stat"><label>memctl</label><span id="st-memctl" class="badge">?</span></div>
+        <div class="stat"><label>可用内存</label><span id="st-mem">-</span></div>
+        <div class="stat"><label>渲染后端</label><span id="st-vulkan">-</span></div>
+        <div class="stat"><label>前台应用</label><span id="st-fg" class="mono">-</span></div>
+        <div class="stat wide"><label>最后日志</label><span id="st-log" class="mono small">-</span></div>
+      </div>
+    </section>
 
-  <!-- 性能模式 -->
-  <section class="card">
-    <h2>性能模式</h2>
-    <div class="modebtns" id="modebtns">
-      <button data-mode="powersave" class="mode">省电</button>
-      <button data-mode="balance" class="mode">均衡</button>
-      <button data-mode="performance" class="mode">性能</button>
-      <button data-mode="fast" class="mode">极速</button>
-    </div>
-    <p class="hint">切换立即生效，写入 cur_powermode.txt 并通知 uperf</p>
-  </section>
+    <section class="card">
+      <h2>性能模式</h2>
+      <div class="modebtns" id="modebtns">
+        <button data-mode="powersave" class="mode">省电</button>
+        <button data-mode="balance" class="mode">均衡</button>
+        <button data-mode="performance" class="mode">性能</button>
+        <button data-mode="fast" class="mode">极速</button>
+      </div>
+      <p class="hint">切换立即生效，写入 cur_powermode.txt 并通知 uperf</p>
+    </section>
 
-  <!-- 频率限制 -->
-  <section class="card">
-    <h2>频率限制 <span id="freq-badge" class="badge na">动态</span></h2>
-    <p class="hint">设置 CPU 最高频率上限，上限以下仍由 uperf 动态调频（保留动态频率）；适合续航向 / 压制发热</p>
-    <div class="form">
-      <div class="row">
-        <label for="f-freq-scope">限制范围</label>
-        <select id="f-freq-scope">
-          <option value="big">仅大核（最高频簇）</option>
-          <option value="all">全部核心</option>
-        </select>
+    <section class="card">
+      <h2>操作</h2>
+      <div class="form inline">
+        <button id="btnReclaim" class="btn warn">立即回收一轮</button>
+        <button id="btnRestart" class="btn warn">重启 memctl</button>
+        <button id="btnRestartUperf" class="btn warn">重启 uperf</button>
+        <button id="btnReload" class="btn">重载配置</button>
       </div>
-      <div class="row">
-        <label for="f-freq-cap">频率上限</label>
-        <select id="f-freq-cap">
-          <option value="0">动态（不限制）</option>
-          <option value="2400000">2.4 GHz</option>
-          <option value="2200000">2.2 GHz</option>
-          <option value="2000000">2.0 GHz</option>
-          <option value="1800000">1.8 GHz</option>
-          <option value="1600000">1.6 GHz</option>
-          <option value="1400000">1.4 GHz</option>
-          <option value="1200000">1.2 GHz</option>
-          <option value="1000000">1.0 GHz</option>
-          <option value="800000">0.8 GHz</option>
-        </select>
-        <span class="hint" id="freq-max-hint">大核硬件上限 -</span>
-      </div>
-      <div class="row">
-        <label for="f-freq-offscreen">息屏自动限频</label>
-        <select id="f-freq-offscreen">
-          <option value="1">启用</option>
-          <option value="0">停用</option>
-        </select>
-        <span class="hint">息屏时自动套用息屏上限，亮屏恢复；不干预应用</span>
-      </div>
-      <div class="row">
-        <label for="f-freq-offcap">息屏上限</label>
-        <select id="f-freq-offcap">
-          <option value="0">跟随主上限</option>
-          <option value="1800000">1.8 GHz</option>
-          <option value="1600000">1.6 GHz</option>
-          <option value="1400000">1.4 GHz</option>
-          <option value="1200000">1.2 GHz</option>
-          <option value="1000000">1.0 GHz</option>
-          <option value="800000">0.8 GHz</option>
-        </select>
-      </div>
-      <div class="row">
-        <button id="btnSaveFreq" class="btn">保存并应用</button>
-        <span id="freq-saved" class="ok hidden">已应用 ✓</span>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CPU 频率范围 -->
-  <section class="card">
-    <h2>CPU 频率范围 <span id="freq-range-badge" class="badge na">动态</span></h2>
-    <p class="hint">分别设置小核 / 中核 / 大核的频率下限与上限，0 = 动态；min=max = 锁频。只允许选择当前 SoC 支持频点。</p>
-    <div class="form">
-      <div class="row">
-        <label for="f-rng-enable">启用频率范围</label>
-        <select id="f-rng-enable">
-          <option value="0">停用（动态）</option>
-          <option value="1">启用</option>
-        </select>
-        <span class="hint" id="freq-range-soc">SoC -</span>
+    <section class="card">
+      <h2>实时运行曲线 <span class="badge na">F4</span></h2>
+      <p class="hint">大/中/小核平均频率 (MHz) 随时间变化，每 2 秒采样</p>
+      <canvas id="metrics-canvas" style="width:100%;height:160px;display:block"></canvas>
+    </section>
+  </div>
+
+  <!-- ==================== 内存页 ==================== -->
+  <div class="page" data-page="mem">
+    <section class="card">
+      <h2>配置预设 <span class="badge ok">一键应用</span></h2>
+      <p class="hint">一键应用整套调参组合（写入 fuyun.conf，最多一个轮询周期生效；核心开关立即生效）</p>
+      <div class="form inline">
+        <button data-preset="balanced" class="btn">均衡默认</button>
+        <button data-preset="power_save" class="btn">日常省电</button>
+        <button data-preset="game" class="btn">游戏性能</button>
+        <button data-preset="fast" class="btn">极速</button>
       </div>
-      <div class="row">
-        <label>小核</label>
-        <div class="inline2">
-          <span>min</span>
-          <select id="f-rng-lmin"></select>
-          <span>max</span>
-          <select id="f-rng-lmax"></select>
+      <div class="form inline" style="margin-top:8px">
+        <input id="preset-name" type="text" placeholder="自定义预设名 (字母数字_-)">
+        <button id="btnPresetSave" class="btn warn">保存当前配置</button>
+      </div>
+      <ul id="preset-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>内存优化配置</h2>
+      <div class="form">
+        <div class="row">
+          <label for="f-mem-enable">总开关</label>
+          <select id="f-mem-enable">
+            <option value="1">启用</option>
+            <option value="0">停用</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="f-mode">回收模式</label>
+          <select id="f-mode">
+            <option value="soft">soft（仅 trim）</option>
+            <option value="hard">hard（trim + 内核回收）</option>
+            <option value="kill">kill（杀进程）</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="f-idle">空闲淘汰</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-idle" type="range" min="0" max="120" step="1" value="5"></div>
+            <span class="gval" id="v-idle">5 分钟</span>
+          </div>
+        </div>
+        <details class="expert">
+        <summary>更多内存参数（专家）</summary>
+        <div class="row slider-row">
+          <label for="f-psi">PSI 压力阈值</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-psi" type="range" min="1" max="100" step="1" value="30"></div>
+            <span class="gval" id="v-psi">30</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-interval">轮询间隔</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-interval" type="range" min="10" max="3600" step="10" value="300"></div>
+            <span class="gval" id="v-interval">300 秒</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-maxround">每轮进程数</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-maxround" type="range" min="1" max="50" step="1" value="10"></div>
+            <span class="gval" id="v-maxround">10</span>
+          </div>
+        </div>
+        <div class="row">
+          <label for="f-switch">切换触发回收</label>
+          <select id="f-switch">
+            <option value="1">启用</option>
+            <option value="0">关闭</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="f-pushkeep">推送应用（\|分隔）</label>
+          <input id="f-pushkeep" type="text" placeholder="com.tencent.mm|com.tencent.mobileqq">
+        </div>
+        <div class="row">
+          <label for="f-keepcmd">保留进程特征</label>
+          <input id="f-keepcmd" type="text" placeholder="push|daemon|msf">
+        </div>
+        </details>
+        <div class="row">
+          <button id="btnSaveCfg" class="btn">保存配置</button>
+          <span id="cfg-saved" class="ok hidden">已保存 ✓</span>
         </div>
       </div>
-      <div class="row">
-        <label>中核</label>
-        <div class="inline2">
-          <span>min</span>
-          <select id="f-rng-mmin"></select>
-          <span>max</span>
-          <select id="f-rng-mmax"></select>
+    </section>
+
+    <section class="card">
+      <h2>分应用回收策略</h2>
+      <div class="form inline">
+        <input id="app-pkg" type="text" placeholder="包名, 如 com.example.game">
+        <select id="app-mode">
+          <option value="hard">hard</option>
+          <option value="soft">soft</option>
+          <option value="kill">kill</option>
+          <option value="off">off</option>
+        </select>
+        <button id="btnAppAdd" class="btn">添加</button>
+      </div>
+      <ul id="app-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>回收白名单</h2>
+      <p class="hint">白名单内的应用不会被回收/清理，支持 com.xxx.* 前缀</p>
+      <div class="form inline">
+        <input id="wl-pkg" type="text" placeholder="包名或前缀, 如 com.tencent.*">
+        <button id="btnWlAdd" class="btn">添加</button>
+      </div>
+      <ul id="wl-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Doze 白名单</h2>
+      <p class="hint">息屏深度 Doze 时仍允许推送/消息的应用</p>
+      <div class="form inline">
+        <input id="doze-pkg" type="text" placeholder="包名, 如 com.tencent.mm">
+        <button id="btnDozeAdd" class="btn">添加</button>
+      </div>
+      <ul id="doze-list" class="list"></ul>
+    </section>
+  </div>
+
+  <!-- ==================== 核心页 ==================== -->
+  <div class="page" data-page="freq">
+    <section class="card">
+      <h2>核心开关 <span id="ctl-badge" class="badge na">停用</span></h2>
+      <p class="hint">按用户配置关闭大核/中核降低功耗，替代旧的冻结式压频；安全约束：绝不关 cpu0、小核始终在线（大/中核可整簇关闭，系统始终保有一整簇算力）</p>
+      <div class="form">
+        <div class="row">
+          <label for="f-ctl-enable">总开关</label>
+          <select id="f-ctl-enable">
+            <option value="0">停用</option>
+            <option value="1">启用</option>
+          </select>
+          <span class="hint">默认关闭，请按需开启</span>
+        </div>
+        <div class="row slider-row">
+          <label for="f-ctl-bigoff">关大核数</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-ctl-bigoff" type="range" min="0" max="2" step="1" value="0"></div>
+            <span class="gval" id="v-ctl-bigoff">0</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-ctl-midoff">关中核数</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-ctl-midoff" type="range" min="0" max="2" step="1" value="0"></div>
+            <span class="gval" id="v-ctl-midoff">0</span>
+          </div>
+        </div>
+        <details class="expert">
+        <summary>息屏/联动（专家）</summary>
+        <div class="row">
+          <label for="f-ctl-offscreen">息屏额外关核</label>
+          <select id="f-ctl-offscreen">
+            <option value="0">停用</option>
+            <option value="1">启用</option>
+          </select>
+          <span class="hint">息屏时把大核压到仅 1 颗，亮屏恢复</span>
+        </div>
+        <div class="row">
+          <label for="f-ctl-idle">深度空闲联动关核</label>
+          <select id="f-ctl-idle">
+            <option value="1">启用</option>
+            <option value="0">停用</option>
+          </select>
+          <span class="hint">辅助调速器进入深度空闲时联动关大核</span>
+        </div>
+        </details>
+        <div class="row">
+          <button id="btnSaveCorectl" class="btn">保存并应用</button>
+          <button id="btnClearCorectl" class="btn warn">全部恢复在线</button>
+          <span id="corectl-saved" class="ok hidden">已应用 ✓</span>
+        </div>
+        <p class="hint" id="ctl-status">当前在线：-</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>辅助调速器 <span id="gov-badge" class="badge na">辅助调速</span></h2>
+      <p class="hint">前台应用持续低占用（如静态页面）时自动降低 idle 场景频率，恢复交互立即还原；深度空闲可联动关核；性能/极速档与息屏时自动停用</p>
+      <div class="form">
+        <div class="row">
+          <label for="f-gov-enable">总开关</label>
+          <select id="f-gov-enable">
+            <option value="1">启用</option>
+            <option value="0">停用</option>
+          </select>
+        </div>
+        <details class="expert">
+        <summary>调速器参数（专家）</summary>
+        <div class="row slider-row">
+          <label for="f-gov-interval">判定间隔</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-gov-interval" type="range" min="3" max="120" step="1" value="10"></div>
+            <span class="gval" id="v-gov-interval">10 秒</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-gov-timeout">进入超时</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-gov-timeout" type="range" min="1" max="300" step="1" value="30"></div>
+            <span class="gval" id="v-gov-timeout">30 秒</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-gov-thd">CPU 阈值</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-gov-thd" type="range" min="1" max="100" step="1" value="5"></div>
+            <span class="gval" id="v-gov-thd">5 %</span>
+          </div>
+        </div>
+        <div class="row slider-row">
+          <label for="f-gov-power">空闲功率预算</label>
+          <div class="gslider">
+            <div class="gs"><div class="gs-track"></div><div class="gs-fill"></div><div class="gs-thumb"></div><input id="f-gov-power" type="range" min="0" max="49" step="1" value="7"></div>
+            <span class="gval" id="v-gov-power">0.8 W</span>
+          </div>
+        </div>
+        <p class="hint">功率预算越低压得越狠（滑块 0.1-5.0W 步进 0.1），建议 0.8-1.0 起步；视频/地图等持续高占用应用自动豁免</p>
+        </details>
+        <div class="row">
+          <button id="btnSaveGov" class="btn">保存配置</button>
+          <span id="gov-saved" class="ok hidden">已保存 ✓</span>
         </div>
       </div>
-      <div class="row">
-        <label>大核</label>
-        <div class="inline2">
-          <span>min</span>
-          <select id="f-rng-bmin"></select>
-          <span>max</span>
-          <select id="f-rng-bmax"></select>
-        </div>
-      </div>
-      <div class="row">
-        <button id="btnSaveFreqRange" class="btn">保存并应用</button>
-        <button id="btnClearFreqRange" class="btn warn">恢复动态</button>
-        <span id="freq-range-saved" class="ok hidden">已应用 ✓</span>
-      </div>
-      <p class="hint" id="freq-range-policies">当前实际频率：-</p>
-    </div>
-  </section>
+    </section>
 
-  <!-- 内存优化配置 -->
-  <section class="card">
-    <h2>内存优化配置</h2>
-    <div class="form">
-      <div class="row">
-        <label for="f-mem-enable">总开关</label>
-        <select id="f-mem-enable">
-          <option value="1">启用</option>
-          <option value="0">停用</option>
+    <section class="card">
+      <h2>调速器白名单</h2>
+      <p class="hint">前台应用命中白名单时永不降频 / 联动关核</p>
+      <div class="form inline">
+        <input id="gwl-pkg" type="text" placeholder="包名或前缀, 如 com.tencent.*">
+        <button id="btnGwlAdd" class="btn">添加</button>
+      </div>
+      <ul id="gwl-list" class="list"></ul>
+    </section>
+  </div>
+
+  <!-- ==================== 管理页 ==================== -->
+  <div class="page" data-page="adv">
+    <section class="card">
+      <h2>分应用性能模式</h2>
+      <p class="hint">指定应用使用固定性能档（V-Tools 兼容格式 <code>perapp_powermode.txt</code>），优先于全局模式</p>
+      <div class="form inline">
+        <input id="perapp-pkg" type="text" placeholder="包名, 如 com.example.game">
+        <select id="perapp-mode">
+          <option value="powersave">省电</option>
+          <option value="balance">均衡</option>
+          <option value="performance">性能</option>
+          <option value="fast">极速</option>
         </select>
+        <button id="btnPerappAdd" class="btn">添加</button>
       </div>
+      <ul id="perapp-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>场景自动化快捷规则 <span class="badge na">F2</span></h2>
+      <p class="hint">一键添加常用规则到 <code>automation.txt</code>（高级设置可微调/删除）；多条规则按序求值，同类型动作以最后匹配为准</p>
+      <div class="form inline">
+        <button data-rule="charging => mode performance" class="btn small">充电切性能</button>
+        <button data-rule="battery<20 => mode powersave" class="btn small">低电省电</button>
+        <button data-rule="time 23:00-07:00 => mode powersave" class="btn small">夜间省电</button>
+        <button data-rule="screen_off => bigoff 1" class="btn small">息屏关大核</button>
+        <button id="btnAutoClear" class="btn warn">清空规则</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>高级设置</h2>
+      <p class="hint">直接编辑配置文件，保存前会自动备份为 <code>.bak</code>；改坏可手动恢复</p>
+      <details>
+        <summary>主配置 <code>fuyun.conf</code>（内存/调速器/核心开关 三合一）</summary>
+        <textarea id="adv-fuyun" class="editor" rows="12" spellcheck="false"></textarea>
+        <div class="row"><button id="btnSaveAdvFuyun" class="btn">保存 fuyun.conf</button></div>
+      </details>
+      <details>
+        <summary>白名单 <code>whitelist.txt</code>（回收/调速器/Doze 三合一）</summary>
+        <textarea id="adv-whitelist" class="editor" rows="8" spellcheck="false"></textarea>
+        <div class="row"><button id="btnSaveAdvWhitelist" class="btn">保存 whitelist.txt</button></div>
+      </details>
+      <details>
+        <summary>分应用性能模式 <code>perapp_powermode.txt</code></summary>
+        <textarea id="adv-perapp" class="editor" rows="6" spellcheck="false"></textarea>
+        <div class="row"><button id="btnSaveAdvPerapp" class="btn">保存 perapp_powermode.txt</button></div>
+      </details>
+      <details>
+        <summary>uperf.json（危险，建议先备份）</summary>
+        <textarea id="adv-uperf" class="editor" rows="14" spellcheck="false"></textarea>
+        <div class="row"><button id="btnSaveAdvUperf" class="btn warn">保存 uperf.json</button></div>
+        <p class="hint">保存后需重启 uperf 生效；模块已自动保留 <code>.bak</code> 备份</p>
+      </details>
+      <details>
+        <summary>场景自动化规则 <code>automation.txt</code>（F2）</summary>
+        <textarea id="adv-automation" class="editor" rows="10" spellcheck="false"></textarea>
+        <div class="row"><button id="btnSaveAdvAutomation" class="btn">保存 automation.txt</button></div>
+        <p class="hint">按 充电/电量/时段/屏幕 触发策略；保存前自动备份 <code>.bak</code></p>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>配置备份与迁移 <span class="badge na">F3</span></h2>
+      <p class="hint">将整套调参配置打包导出 (可迁移/分享); 导入前自动把当前配置备份为 <code>.bak</code></p>
+      <div class="form inline">
+        <button id="btnBackupExport" class="btn">导出配置</button>
+        <input id="backup-import" type="file" accept=".tar.gz,.gz" style="display:none">
+        <button id="btnBackupImport" class="btn">导入配置</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>渲染后端 <span id="vk-badge" class="badge na">-</span></h2>
+      <p class="hint">Vulkan 渲染（默认）与 OpenGL 切换，状态持久化，开机按上次选择生效；切换后完全生效需重启，即时部分 prop 已应用</p>
+      <div class="form inline">
+        <button id="btnVkOn" class="btn">切换为 Vulkan</button>
+        <button id="btnVkOff" class="btn warn">还原 OpenGL</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>插件管理 <span class="badge na">root-only</span></h2>
+      <p class="hint">目录 <code>/data/adb/uperf/plugins</code>：<code>.sh</code> 脚本按阶段（apply/clear/boot）执行；<code>uperf.*.json</code> 是可一键切换的特调配置；<code>.disabled</code> 后缀 = 停用</p>
+      <ul id="plugin-list" class="list"></ul>
       <div class="row">
-        <label for="f-mode">回收模式</label>
-        <select id="f-mode">
-          <option value="soft">soft（仅 trim）</option>
-          <option value="hard">hard（trim + 内核回收）</option>
-          <option value="kill">kill（杀进程）</option>
+        <button id="btnPluginLog" class="btn">加载插件日志</button>
+      </div>
+      <pre id="plugin-log-view" class="log">-</pre>
+    </section>
+
+    <section class="card">
+      <h2>日志</h2>
+      <div class="form inline">
+        <select id="log-file">
+          <option value="mem">mem_log</option>
+          <option value="screen">screen_log</option>
+          <option value="uperf">uperf_log</option>
+          <option value="corectl">corectl_log</option>
+          <option value="auxgov">auxgov_log</option>
+          <option value="watchdog">watchdog_log</option>
+          <option value="auto">automation_log</option>
         </select>
-      </div>
-      <div class="row">
-        <label for="f-psi">PSI 压力阈值</label>
-        <input id="f-psi" type="number" min="0" max="100" placeholder="30">
-      </div>
-      <div class="row">
-        <label for="f-interval">轮询间隔（秒）</label>
-        <input id="f-interval" type="number" min="30" placeholder="300">
-      </div>
-      <div class="row">
-        <label for="f-idle">空闲淘汰（分钟）</label>
-        <input id="f-idle" type="number" min="0" placeholder="5">
-        <span class="hint">0=关闭杀进程</span>
-      </div>
-      <div class="row">
-        <label for="f-switch">切换触发回收</label>
-        <select id="f-switch">
-          <option value="1">启用</option>
-          <option value="0">关闭</option>
+        <select id="log-lines">
+          <option value="50">50 行</option>
+          <option value="200">200 行</option>
+          <option value="1000">1000 行</option>
         </select>
+        <button id="btnLog" class="btn">加载日志</button>
+        <label class="hint"><input type="checkbox" id="log-auto"> 自动刷新</label>
       </div>
-      <div class="row">
-        <label for="f-maxround">每轮进程数</label>
-        <input id="f-maxround" type="number" min="1" placeholder="10">
-      </div>
-      <div class="row">
-        <label for="f-pushkeep">推送应用（\|分隔）</label>
-        <input id="f-pushkeep" type="text" placeholder="com.tencent.mm|com.tencent.mobileqq">
-      </div>
-      <div class="row">
-        <label for="f-keepcmd">保留进程特征</label>
-        <input id="f-keepcmd" type="text" placeholder="push|daemon|msf">
-      </div>
-      <div class="row">
-        <button id="btnSaveCfg" class="btn">保存配置</button>
-        <span id="cfg-saved" class="ok hidden">已保存 ✓</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- 辅助调速器 -->
-  <section class="card">
-    <h2>辅助调速器 <span id="gov-badge" class="badge na">空闲压频</span></h2>
-    <p class="hint">前台应用持续低占用（如静态页面）时自动压低空闲频率，恢复交互立即还原；性能/极速档与息屏时自动停用</p>
-    <div class="form">
-      <div class="row">
-        <label for="f-gov-enable">总开关</label>
-        <select id="f-gov-enable">
-          <option value="1">启用</option>
-          <option value="0">停用</option>
-        </select>
-      </div>
-      <div class="row">
-        <label for="f-gov-interval">判定间隔（秒）</label>
-        <input id="f-gov-interval" type="number" min="3" placeholder="10">
-      </div>
-      <div class="row">
-        <label for="f-gov-timeout">进入超时（秒）</label>
-        <input id="f-gov-timeout" type="number" min="1" placeholder="30">
-      </div>
-      <div class="row">
-        <label for="f-gov-thd">CPU 阈值（%单核）</label>
-        <input id="f-gov-thd" type="number" min="1" max="100" placeholder="5">
-        <span class="hint">视频/地图等持续高占用应用自动豁免</span>
-      </div>
-      <div class="row">
-        <label for="f-gov-power">空闲功率预算（瓦）</label>
-        <input id="f-gov-power" type="number" step="0.1" min="0.1" max="5" placeholder="0.8">
-        <span class="hint">越低压得越狠，建议 0.8-1.0 起步</span>
-      </div>
-      <div class="row">
-        <button id="btnSaveGov" class="btn">保存配置</button>
-        <span id="gov-saved" class="ok hidden">已保存 ✓</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- 调速器白名单 -->
-  <section class="card">
-    <h2>调速器白名单</h2>
-    <p class="hint">前台应用命中白名单时永不压制频率</p>
-    <div class="form inline">
-      <input id="gwl-pkg" type="text" placeholder="包名或前缀, 如 com.tencent.*">
-      <button id="btnGwlAdd" class="btn">添加</button>
-    </div>
-    <ul id="gwl-list" class="list"></ul>
-  </section>
-
-  <!-- 分应用策略 -->
-  <section class="card">
-    <h2>分应用回收策略</h2>
-    <div class="form inline">
-      <input id="app-pkg" type="text" placeholder="包名, 如 com.example.game">
-      <select id="app-mode">
-        <option value="hard">hard</option>
-        <option value="soft">soft</option>
-        <option value="kill">kill</option>
-        <option value="off">off</option>
-      </select>
-      <button id="btnAppAdd" class="btn">添加</button>
-    </div>
-    <ul id="app-list" class="list"></ul>
-  </section>
-
-  <!-- 白名单 -->
-  <section class="card">
-    <h2>回收白名单</h2>
-    <div class="form inline">
-      <input id="wl-pkg" type="text" placeholder="包名或前缀, 如 com.tencent.*">
-      <button id="btnWlAdd" class="btn">添加</button>
-    </div>
-    <ul id="wl-list" class="list"></ul>
-  </section>
-
-  <!-- Doze 白名单 -->
-  <section class="card">
-    <h2>Doze 白名单</h2>
-    <p class="hint">息屏深度 Doze 时仍允许推送/消息的应用</p>
-    <div class="form inline">
-      <input id="doze-pkg" type="text" placeholder="包名, 如 com.tencent.mm">
-      <button id="btnDozeAdd" class="btn">添加</button>
-    </div>
-    <ul id="doze-list" class="list"></ul>
-  </section>
-
-  <!-- 高级设置 -->
-  <section class="card">
-    <h2>高级设置</h2>
-    <p class="hint">直接编辑配置文件，保存前会自动备份为 <code>.bak</code>；改坏可手动恢复</p>
-    <details>
-      <summary>内存优化配置 <code>mem_config.txt</code></summary>
-      <textarea id="adv-mem" class="editor" rows="8" spellcheck="false"></textarea>
-      <div class="row"><button id="btnSaveAdvMem" class="btn">保存 mem_config.txt</button></div>
-    </details>
-    <details>
-      <summary>辅助调速器 <code>idle_gov.txt</code></summary>
-      <textarea id="adv-idle" class="editor" rows="8" spellcheck="false"></textarea>
-      <div class="row"><button id="btnSaveAdvIdle" class="btn">保存 idle_gov.txt</button></div>
-    </details>
-    <details>
-      <summary>分应用性能模式 <code>perapp_powermode.txt</code></summary>
-      <textarea id="adv-perapp" class="editor" rows="6" spellcheck="false"></textarea>
-      <div class="row"><button id="btnSaveAdvPerapp" class="btn">保存 perapp_powermode.txt</button></div>
-    </details>
-    <details>
-      <summary>uperf.json（危险，建议先备份）</summary>
-      <textarea id="adv-uperf" class="editor" rows="14" spellcheck="false"></textarea>
-      <div class="row"><button id="btnSaveAdvUperf" class="btn warn">保存 uperf.json</button></div>
-      <p class="hint">保存后需重启 uperf 生效；模块已自动保留 <code>.bak</code> 备份</p>
-    </details>
-  </section>
-
-  <!-- 操作 -->
-  <section class="card">
-    <h2>操作</h2>
-    <div class="form inline">
-      <button id="btnReclaim" class="btn warn">立即回收一轮</button>
-      <button id="btnRestart" class="btn warn">重启 memctl</button>
-      <button id="btnReload" class="btn">重载配置</button>
-    </div>
-  </section>
-
-  <!-- 日志 -->
-  <section class="card">
-    <h2>日志</h2>
-    <div class="form inline">
-      <select id="log-file">
-        <option value="mem">mem_log</option>
-        <option value="screen">screen_log</option>
-        <option value="uperf">uperf_log</option>
-      </select>
-      <button id="btnLog" class="btn">加载日志</button>
-    </div>
-    <pre id="log-view" class="log">-</pre>
-  </section>
+      <pre id="log-view" class="log">-</pre>
+    </section>
+  </div>
 </main>
 
-<footer>
-  <span>浮云调度进程运行中</span>
-</footer>
-<script src="app.js"></script>
+<footer>浮云调度进程运行中 · <span id="ft-ver">v?</span></footer>
+
+<!-- ==================== Glass Bottom Bar ====================
+     结构对应 LiquidBottomTabs: 容器胶囊(vibrancy+blur8+lens24) + 独立滑动玻璃胶囊指示器 -->
+<nav class="glass-bar" id="navbar" aria-label="页面导航">
+  <div class="tab-pill" id="tabPill" aria-hidden="true"></div>
+  <button class="tab active" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+    <span>状态</span>
+  </button>
+  <button class="tab" data-tab="mem">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="12" rx="2"/><path d="M9 7V4M15 7V4M9 12h.01M12 12h.01M15 12h.01M9 15.5h.01M12 15.5h.01M15 15.5h.01"/></svg>
+    <span>内存</span>
+  </button>
+  <button class="tab" data-tab="freq">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">    <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+    <span>核心</span>
+  </button>
+  <button class="tab" data-tab="adv">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2"/><circle cx="10" cy="16" r="2"/></svg>
+    <span>管理</span>
+  </button>
+</nav>
+<!-- F5: WebUI 访问令牌占位, 由 webuid.sh 启动时注入 (供页面在 API 请求中携带) -->
+<script>const WEBUI_TOKEN = ""; /* injected by webuid.sh (F5) */</script>
+<script src="app.js?v=20260829b"></script>
+<script src="metrics.js?v=20260829b"></script>
 </body>
 </html>

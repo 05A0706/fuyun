@@ -119,6 +119,11 @@ get_config_name() {
     "pineapple") echo "sdm8g3";;
     "kalama") echo "sdm8g2" ;;
     "taro") echo "sdm8+" ;;
+    # 骁龙 8 Elite (SM8750): board 平台名 sun (Oryon 2+6)
+    "sun") echo "sdm8e" ;;
+    # 骁龙 8s Elite / 8s Gen4 (SM8735): 代号 Bonito; 8 Elite 2 代号 sun2。
+    # 注: 各机型/内核版本 board 名可能有差异, 若真机未命中请在此补充。
+    "bonito"|"sun2"|"voltron") echo "sdm8e5" ;;
     "lahaina") echo "$(_get_lahaina_type)" ;;
     "shima") echo "$(_get_lahaina_type)" ;;
     "yupik") echo "$(_get_lahaina_type)" ;;
